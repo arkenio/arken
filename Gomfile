@@ -1,7 +1,7 @@
 gom 'github.com/BurntSushi/toml', :commit => '5c4df71dfe9ac89ef6287afc05e4c1b16ae65a1e'
 gom 'github.com/Sirupsen/logrus', :commit => 'be52937128b38f1d99787bb476c789e2af1147f1'
 gom 'github.com/arkenio/arken', :commit => '36f02e8abd525e8fc2604f16cd31f5db04e343d9'
-gom 'github.com/arkenio/goarken', :commit => 'f68409b174a4e318a9625a6660e59ca60df73581'
+gom 'github.com/arkenio/goarken', :branch => 'branch_name'
 gom 'github.com/coreos/go-etcd', :commit => '003851be7bb0694fe3cc457a49529a19388ee7cf'
 gom 'github.com/golang/glog', :commit => 'fca8c8854093a154ff1eb580aae10276ad6b1b5f'
 gom 'github.com/gorilla/context', :commit => '1c83b3eabd45b6d76072b66b746c20815fb2872d'
