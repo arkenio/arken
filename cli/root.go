@@ -20,6 +20,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/Sirupsen/logrus"
+	"github.com/arkenio/goarken/model"
 )
 
 
@@ -31,8 +33,10 @@ type Config struct {
 }
 
 
+var log = logrus.New()
+var arkenModel *model.Model
+
 var cfgFile string
-var config Config
 
 // This represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -48,6 +52,8 @@ how to create/start/stop your application environments.`,
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+
+
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -56,20 +62,7 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
-
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.arken.yaml)")
-	RootCmd.PersistentFlags().StringVar(&config.DomainPrefix, "domainDir", "/domains", "etcd prefix to get domains")
-	RootCmd.PersistentFlags().StringVar(&config.ServicePrefix, "serviceDir", "/services", "etcd prefix to get services")
-	RootCmd.PersistentFlags().StringVar(&config.EtcdAddress, "etcdAddress", "http://127.0.0.1:4001/", "Address of an etcd endpoint")
-
-	viper.BindPFlag("domainDir", RootCmd.PersistentFlags().Lookup("domainDir"))
-	viper.BindPFlag("serviceDir", RootCmd.PersistentFlags().Lookup("serviceDir"))
-	viper.BindPFlag("etcdAddress", RootCmd.PersistentFlags().Lookup("etcdAddress"))
-
 
 }
 
@@ -79,12 +72,34 @@ func initConfig() {
 		viper.SetConfigFile(cfgFile)
 	}
 
-	viper.SetConfigName(".arken") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")  // adding home directory as first search path
+	viper.SetConfigName("arken") // name of config file (without extension)
+	viper.AddConfigPath("/etc/arken/")  // adding home directory as first search path
+	viper.AddConfigPath(".")  // adding home directory as first search path
 	viper.AutomaticEnv()          // read in environment variables that match
+
+
+	viper.SetDefault("domainDir","/domains")
+	viper.SetDefault("serviceDir","/services")
+	viper.SetDefault("etcdAddress","http://127.0.0.1:4001")
+	viper.SetDefault("driver","fleet")
+
+
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		log.Infof("Using config file:", viper.ConfigFileUsed())
+
+	} else {
+
 	}
+
+
+	// Initialize GoArken model
+	etcdClient := CreateEtcdClient()
+	serviceDriver := CreateServiceDriver(etcdClient)
+	persistenceDriver := CreateWatcherFromCli(etcdClient)
+
+	arkenModel = model.NewArkenModel(serviceDriver, persistenceDriver )
+
+
 }

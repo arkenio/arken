@@ -11,10 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package api
+package cli
 import (
 	"github.com/coreos/go-etcd/etcd"
-	"github.com/arkenio/goarken"
+	"github.com/arkenio/goarken/model"
+	"github.com/arkenio/goarken/storage"
+	"github.com/arkenio/goarken/drivers"
 	"github.com/spf13/viper"
 )
 
@@ -26,17 +28,23 @@ func CreateEtcdClient() *etcd.Client {
 }
 
 
-func CreateWatcherFromCli(client *etcd.Client) *goarken.Watcher {
-	domainDir := viper.GetString("domainDir")
-	serviceDir := viper.GetString("serviceDir")
-	w := &goarken.Watcher{
-		Client:        client,
-		DomainPrefix:  domainDir,
-		ServicePrefix: serviceDir,
-		Domains:       make(map[string]*goarken.Domain),
-		Services:      make(map[string]*goarken.ServiceCluster),
+func CreateServiceDriver(etcdClient *etcd.Client ) model.ServiceDriver {
+	switch viper.GetString("driver") {
+	case "rancher":
+		sd, err := drivers.NewRancherServiceDriver(etcdClient,viper.GetString("rancher.host"),viper.GetString("rancher.accessKey"),viper.GetString("rancher.secretKey"))
+		if err != nil {
+			panic(err)
+		}
+		return sd;
+
+	default:
+		return drivers.NewFleetServiceDriver(etcdClient)
 	}
-	w.Init()
-	return w
+}
+
+
+func CreateWatcherFromCli(client *etcd.Client) *storage.Watcher {
+	return storage.NewWatcher(client, viper.GetString("serviceDir"), viper.GetString("domainDir"))
+
 }
 

@@ -16,12 +16,11 @@ package api
 import (
 	"net/http"
 
+	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/arkenio/goarken"
-	"github.com/coreos/go-etcd/etcd"
+	"github.com/arkenio/goarken/model"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
-	"fmt"
 )
 
 // Create a new instance of the logger. You can have any number of instances.
@@ -37,18 +36,14 @@ type Route struct {
 type Routes []Route
 
 type APIServer struct {
-	watcher *goarken.Watcher
-	client  *etcd.Client
-	port	int
+	arkenModel *model.Model
+	port       int
 }
 
-func NewAPIServer() *APIServer {
-	client := CreateEtcdClient()
-	w := CreateWatcherFromCli(client)
+func NewAPIServer(model *model.Model) *APIServer {
 	return &APIServer{
-		watcher: w,
-		client:  client,
-		port: viper.GetInt("port"),
+		arkenModel: model,
+		port:       viper.GetInt("port"),
 	}
 }
 
@@ -66,6 +61,18 @@ func (s *APIServer) Start() {
 			"GET",
 			"/services/{serviceId}",
 			s.ServiceShow,
+		},
+		Route{
+			"ServiceCreate",
+			"POST",
+			"/services/{serviceId}",
+			s.ServiceCreate(),
+		},
+		Route{
+			"ServiceDestroy",
+			"DELETE",
+			"/services/{serviceId}",
+			s.ServiceDestroy(),
 		},
 		Route{
 			"ServiceStop",
@@ -97,18 +104,18 @@ func (s *APIServer) Start() {
 			"/domains",
 			s.DomainIndex,
 		},
-
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {
 		router.
 			Methods(route.Method).
-			Path(fmt.Sprintf("/api/v1%s",route.Pattern)).
+			Path(fmt.Sprintf("/api/v1%s", route.Pattern)).
 			Name(route.Name).
 			Handler(route.HandlerFunc)
 	}
 
-	log.Info(fmt.Sprintf("Starting Arken API server on port : %d",s.port))
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d",s.port), router))
+	log.Info(fmt.Sprintf("Starting Arken API server on port : %d", s.port))
+	log.Info(fmt.Sprintf("   with driver : %s", viper.GetString("driver")))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.port), router))
 }

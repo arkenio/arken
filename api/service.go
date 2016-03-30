@@ -15,10 +15,12 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/arkenio/goarken"
+	"fmt"
+	goarken "github.com/arkenio/goarken/model"
 	"github.com/gorilla/mux"
 	"net/http"
 	"reflect"
+	"io"
 )
 
 func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +29,7 @@ func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
 
 	services := make(map[string]*goarken.ServiceCluster)
 
-	for _, cluster := range s.watcher.Services {
+	for _, cluster := range s.arkenModel.Services {
 		for _, service := range cluster.GetInstances() {
 			if statusFilter == "" || statusFilter == service.Status.Compute() {
 				services[service.Name] = cluster
@@ -42,47 +44,83 @@ func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
 
 func (s *APIServer) ServiceShow(w http.ResponseWriter, r *http.Request) {
 	serviceId := mux.Vars(r)["serviceId"]
-	service := s.watcher.Services[serviceId]
+	service := s.arkenModel.Services[serviceId]
 
-	if s.watcher.Services[serviceId] != nil {
+	if s.arkenModel.Services[serviceId] != nil {
 		if err := json.NewEncoder(w).Encode(service); err != nil {
 			panic(err)
 		}
 	}
 }
 
-
-func (s *APIServer) run(methodName string) func(w http.ResponseWriter, r *http.Request ) {
+func (s *APIServer) run(methodName string) func(w http.ResponseWriter, r *http.Request) {
 	var value reflect.Value
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		serviceId := mux.Vars(r)["serviceId"]
-		serviceCluster := s.watcher.Services[serviceId]
+		serviceCluster := s.arkenModel.Services[serviceId]
 
-		if s.watcher.Services[serviceId] != nil {
+		if s.arkenModel.Services[serviceId] != nil {
 			for _, service := range serviceCluster.GetInstances() {
-				value = reflect.ValueOf(service)
-				err := value.MethodByName(methodName).Call([]reflect.Value{reflect.ValueOf(s.client)})
+				value = reflect.ValueOf(s.arkenModel)
+				err := value.MethodByName(methodName).Call([]reflect.Value{reflect.ValueOf(service)})
 				if err != nil {
 					break
 				}
 			}
 		}
 
-		s.ServiceShow(w,r)
+		s.ServiceShow(w, r)
 	}
 }
 
+func (s *APIServer) ServiceCreate() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+
+		service := &goarken.Service{}
+		service.Init()
+
+		err := decoder.Decode(service)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = s.arkenModel.CreateService(service, false)
+
+		if err != nil {
+			panic(err)
+		}
+
+		s.ServiceShow(w, r)
+
+	}
+
+}
+
+func (s *APIServer) ServiceDestroy() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		serviceId := mux.Vars(r)["serviceId"]
+		serviceCluster := s.arkenModel.Services[serviceId]
+
+		err := s.arkenModel.DestroyServiceCluster(serviceCluster)
+		if err == nil {
+			io.WriteString(w,"{\"serviceDestroyed\":\"ok\"}")
+		} else {
+			io.WriteString(w,fmt.Sprintf("{\"serviceDestroyed\":\"ko\", \"error\":\"%s\"}}", err))
+		}
+
+	}
+}
 
 func (s *APIServer) ServiceStop() func(w http.ResponseWriter, r *http.Request) {
-	return s.run("Stop")
+	return s.run("StopService")
 }
 
 func (s *APIServer) ServiceStart() func(w http.ResponseWriter, r *http.Request) {
-	return s.run("Start")
+	return s.run("StartService")
 }
 
 func (s *APIServer) ServicePassivate() func(w http.ResponseWriter, r *http.Request) {
-	return s.run("Passivate")
+	return s.run("PassivateService")
 }
-
