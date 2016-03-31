@@ -65,11 +65,11 @@ func (s *APIServer) Start() {
 		Route{
 			"ServiceCreate",
 			"POST",
-			"/services/{serviceId}",
+			"/services",
 			s.ServiceCreate(),
 		},
 		Route{
-			"ServiceDestroy",
+			"ServiceDelete",
 			"DELETE",
 			"/services/{serviceId}",
 			s.ServiceDestroy(),

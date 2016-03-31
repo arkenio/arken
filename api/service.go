@@ -45,7 +45,7 @@ func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
 func (s *APIServer) ServiceShow(w http.ResponseWriter, r *http.Request) {
 	serviceId := mux.Vars(r)["serviceId"]
 	service := s.arkenModel.Services[serviceId]
-
+	w.Header().Add("Content-Type","application/json")
 	if s.arkenModel.Services[serviceId] != nil {
 		if err := json.NewEncoder(w).Encode(service); err != nil {
 			panic(err)
@@ -85,14 +85,16 @@ func (s *APIServer) ServiceCreate() func(w http.ResponseWriter, r *http.Request)
 		if err != nil {
 			panic(err)
 		}
-
+		log.Infof("Creating service %s", service.Name)
 		_, err = s.arkenModel.CreateService(service, false)
 
 		if err != nil {
 			panic(err)
 		}
-
-		s.ServiceShow(w, r)
+		w.Header().Add("Content-Type","application/json")
+		if err := json.NewEncoder(w).Encode(service); err != nil {
+			panic(err)
+		}
 
 	}
 

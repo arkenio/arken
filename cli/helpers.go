@@ -31,7 +31,7 @@ func CreateEtcdClient() *etcd.Client {
 func CreateServiceDriver(etcdClient *etcd.Client ) model.ServiceDriver {
 	switch viper.GetString("driver") {
 	case "rancher":
-		sd, err := drivers.NewRancherServiceDriver(etcdClient,viper.GetString("rancher.host"),viper.GetString("rancher.accessKey"),viper.GetString("rancher.secretKey"))
+		sd, err := drivers.NewRancherServiceDriver(viper.GetString("rancher.host"),viper.GetString("rancher.accessKey"),viper.GetString("rancher.secretKey"))
 		if err != nil {
 			panic(err)
 		}

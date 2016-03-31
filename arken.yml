@@ -3,6 +3,6 @@
 #etcdAddress: http://localhost:4001/
 driver: rancher
 rancher:
-  host: http://192.168.99.100:8080/v1/projects/1a5
-  accessKey: 28190CFAD75DE2553F53
-  secretKey: S7WZunUF5abAFn6V5hh4qkFLjmtjGg8P3pLinJGw
+  host: http://192.168.99.106:8080/v1/projects/1a5
+  accessKey: 8586D010419D0AC99971
+  secretKey: E1euuc8mYpiZWMdAz7q4a4rWVi4UUpcxuv35vw5j
