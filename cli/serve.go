@@ -16,7 +16,7 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/arkenio/arken/api"
+	"../api"
 	"github.com/spf13/viper"
 )
 
