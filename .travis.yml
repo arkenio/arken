@@ -4,6 +4,7 @@ go:
 before_install:
 - go get github.com/mattn/gom
 script:
+- cd src
 - $HOME/gopath/bin/gom install
 - $HOME/gopath/bin/gom build -o bin/arken
 - $HOME/gopath/bin/gom test

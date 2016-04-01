@@ -44,15 +44,11 @@ var RootCmd = &cobra.Command{
 	Short: "The Arken cluster management daemon",
 	Long: `This is the Arken cluster management daemon, that knows
 how to create/start/stop your application environments.`,
-// Uncomment the following line if your bare application
-// has an action associated with it:
-//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-
 
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -84,22 +80,33 @@ func initConfig() {
 	viper.SetDefault("driver","fleet")
 
 
-
+	log.Info("Starting Arken...")
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		log.Infof("Using config file: %s", viper.ConfigFileUsed())
 
 	} else {
-
+		log.Errorf("Unable to read config file")
 	}
 
 
 	// Initialize GoArken model
 	etcdClient := CreateEtcdClient()
-	serviceDriver := CreateServiceDriver(etcdClient)
+
+	serviceDriver, err := CreateServiceDriver(etcdClient)
+	if(err != nil) {
+		log.Error("Unable to create Service Driver :")
+		log.Error(err.Error())
+		os.Exit(-1)
+	}
+
 	persistenceDriver := CreateWatcherFromCli(etcdClient)
 
-	arkenModel = model.NewArkenModel(serviceDriver, persistenceDriver )
-
+	arkenModel, err = model.NewArkenModel(serviceDriver, persistenceDriver )
+	if err != nil {
+		log.Error("Unable to initialize Arken model:")
+		log.Error(err.Error())
+		os.Exit(-1)
+	}
 
 }

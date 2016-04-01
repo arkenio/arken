@@ -18,6 +18,8 @@ import (
 	"github.com/arkenio/goarken/storage"
 	"github.com/arkenio/goarken/drivers"
 	"github.com/spf13/viper"
+	"errors"
+	"fmt"
 )
 
 
@@ -28,17 +30,17 @@ func CreateEtcdClient() *etcd.Client {
 }
 
 
-func CreateServiceDriver(etcdClient *etcd.Client ) model.ServiceDriver {
+func CreateServiceDriver(etcdClient *etcd.Client ) (model.ServiceDriver, error) {
 	switch viper.GetString("driver") {
 	case "rancher":
 		sd, err := drivers.NewRancherServiceDriver(viper.GetString("rancher.host"),viper.GetString("rancher.accessKey"),viper.GetString("rancher.secretKey"))
 		if err != nil {
-			panic(err)
+			return nil, errors.New(fmt.Sprintf("Unable to connect to Rancher : %s", err.Error()))
 		}
-		return sd;
+		return sd, nil;
 
 	default:
-		return drivers.NewFleetServiceDriver(etcdClient)
+		return drivers.NewFleetServiceDriver(etcdClient),nil
 	}
 }
 

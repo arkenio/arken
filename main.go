@@ -17,12 +17,14 @@ package main
 import (
 	"flag"
 	"github.com/arkenio/arken/cli"
-	"log"
 	"os"
 	"os/signal"
 	"runtime/pprof"
 	"syscall"
+	"github.com/Sirupsen/logrus"
 )
+
+var log = logrus.New()
 
 func main() {
 	flag.Parse()
@@ -50,7 +52,7 @@ func handleSignals() {
 			switch sig {
 			case syscall.SIGTERM, syscall.SIGINT:
 				//Exit gracefully
-				log.Print("Shutting down...")
+				log.Infof("Shutting down...")
 				os.Exit(0)
 			case syscall.SIGUSR1:
 				pprof.Lookup("goroutine").WriteTo(os.Stdout, 2)
