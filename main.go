@@ -15,7 +15,6 @@
 package main
 
 import (
-	"flag"
 	"./cli"
 	"os"
 	"os/signal"
@@ -27,7 +26,6 @@ import (
 var log = logrus.New()
 
 func main() {
-	flag.Parse()
 	handleSignals()
 	cli.Execute()
 }

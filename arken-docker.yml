@@ -1,6 +1,6 @@
 #domainDir: /domains
 #serviceDir: /services
-etcdAddress: http://etcd:2789/
+etcdAddress: http://etcd:2379/
 driver: rancher
 rancher:
   host: http://192.168.99.100:8080/v1/projects/1a5
