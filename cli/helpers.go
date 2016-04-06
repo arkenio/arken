@@ -13,40 +13,56 @@
 // limitations under the License.
 package cli
 import (
-	"github.com/coreos/go-etcd/etcd"
+	"github.com/coreos/etcd/client"
 	"github.com/arkenio/goarken/model"
 	"github.com/arkenio/goarken/storage"
 	"github.com/arkenio/goarken/drivers"
 	"github.com/spf13/viper"
 	"errors"
 	"fmt"
+	"time"
 )
 
 
 
-func CreateEtcdClient() *etcd.Client {
+func CreateEtcdClient() client.KeysAPI {
 	etcdAdress := viper.GetString("etcdAddress")
-	return etcd.NewClient([]string{etcdAdress})
+
+	cfg := client.Config{
+		Endpoints:               []string{etcdAdress},
+		Transport:               client.DefaultTransport,
+		HeaderTimeoutPerRequest: time.Second,
+	}
+	c, err := client.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return client.NewKeysAPI(c)
+
 }
 
 
-func CreateServiceDriver(etcdClient *etcd.Client ) (model.ServiceDriver, error) {
+func CreateServiceDriver(etcdClient client.KeysAPI) (model.ServiceDriver, error) {
 	switch viper.GetString("driver") {
 	case "rancher":
 		sd, err := drivers.NewRancherServiceDriver(viper.GetString("rancher.host"),viper.GetString("rancher.accessKey"),viper.GetString("rancher.secretKey"))
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Unable to connect to Rancher : %s", err.Error()))
 		}
+
+
+
 		return sd, nil;
 
 	default:
-		return drivers.NewFleetServiceDriver(etcdClient),nil
+		return drivers.NewFleetServiceDriver(viper.GetString("etcdAddress")),nil
 	}
 }
 
 
-func CreateWatcherFromCli(client *etcd.Client) *storage.Watcher {
+func CreateWatcherFromCli(client client.KeysAPI) *storage.Watcher {
 	return storage.NewWatcher(client, viper.GetString("serviceDir"), viper.GetString("domainDir"))
 
 }
+
 

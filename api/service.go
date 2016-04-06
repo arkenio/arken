@@ -38,18 +38,23 @@ func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(services); err != nil {
-		panic(err)
+		http.Error(w,err.Error(), 500)
 	}
 }
 
 func (s *APIServer) ServiceShow(w http.ResponseWriter, r *http.Request) {
 	serviceId := mux.Vars(r)["serviceId"]
-	service := s.arkenModel.Services[serviceId]
-	w.Header().Add("Content-Type","application/json")
-	if s.arkenModel.Services[serviceId] != nil {
+
+
+
+
+	if service,ok := s.arkenModel.Services[serviceId] ; ok {
+		w.Header().Add("Content-Type","application/json")
 		if err := json.NewEncoder(w).Encode(service); err != nil {
-			panic(err)
+			http.Error(w,err.Error(), 500)
 		}
+	} else {
+		http.NotFound(w,r)
 	}
 }
 
@@ -57,10 +62,10 @@ func (s *APIServer) run(methodName string) func(w http.ResponseWriter, r *http.R
 	var value reflect.Value
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		serviceId := mux.Vars(r)["serviceId"]
-		serviceCluster := s.arkenModel.Services[serviceId]
 
-		if s.arkenModel.Services[serviceId] != nil {
+		serviceId := mux.Vars(r)["serviceId"]
+
+		if serviceCluster,ok := s.arkenModel.Services[serviceId] ; ok {
 			for _, service := range serviceCluster.GetInstances() {
 				value = reflect.ValueOf(s.arkenModel)
 				err := value.MethodByName(methodName).Call([]reflect.Value{reflect.ValueOf(service)})
@@ -68,9 +73,12 @@ func (s *APIServer) run(methodName string) func(w http.ResponseWriter, r *http.R
 					break
 				}
 			}
+			s.ServiceShow(w, r)
+		} else {
+			http.NotFound(w,r)
 		}
 
-		s.ServiceShow(w, r)
+
 	}
 }
 
@@ -83,17 +91,24 @@ func (s *APIServer) ServiceCreate() func(w http.ResponseWriter, r *http.Request)
 
 		err := decoder.Decode(service)
 		if err != nil {
-			panic(err)
+			log.Errorf("Error when decoding service %s : %s", service.Name, err.Error())
+			http.Error(w, err.Error(), 500)
+			return
 		}
+
 		log.Infof("Creating service %s", service.Name)
 		_, err = s.arkenModel.CreateService(service, false)
-
 		if err != nil {
-			panic(err)
+			log.Errorf("Error when creating service %s : %s", service.Name, err.Error())
+			http.Error(w, err.Error(), 500)
+			return
 		}
+
+
 		w.Header().Add("Content-Type","application/json")
-		if err := json.NewEncoder(w).Encode(service); err != nil {
-			panic(err)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
 		}
 
 	}
