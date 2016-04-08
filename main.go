@@ -15,7 +15,7 @@
 package main
 
 import (
-	"./cli"
+	"github.com/arkenio/arken/cli"
 	"os"
 	"os/signal"
 	"runtime/pprof"
