@@ -15,12 +15,13 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	goarken "github.com/arkenio/goarken/model"
 	"github.com/gorilla/mux"
+	"io"
 	"net/http"
 	"reflect"
-	"io"
 )
 
 func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
@@ -38,23 +39,20 @@ func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(services); err != nil {
-		http.Error(w,err.Error(), 500)
+		http.Error(w, err.Error(), 500)
 	}
 }
 
 func (s *APIServer) ServiceShow(w http.ResponseWriter, r *http.Request) {
 	serviceId := mux.Vars(r)["serviceId"]
 
-
-
-
-	if service,ok := s.arkenModel.Services[serviceId] ; ok {
-		w.Header().Add("Content-Type","application/json")
+	if service, ok := s.arkenModel.Services[serviceId]; ok {
+		w.Header().Add("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(service); err != nil {
-			http.Error(w,err.Error(), 500)
+			http.Error(w, err.Error(), 500)
 		}
 	} else {
-		http.NotFound(w,r)
+		http.NotFound(w, r)
 	}
 }
 
@@ -65,7 +63,7 @@ func (s *APIServer) run(methodName string) func(w http.ResponseWriter, r *http.R
 
 		serviceId := mux.Vars(r)["serviceId"]
 
-		if serviceCluster,ok := s.arkenModel.Services[serviceId] ; ok {
+		if serviceCluster, ok := s.arkenModel.Services[serviceId]; ok {
 			for _, service := range serviceCluster.GetInstances() {
 				value = reflect.ValueOf(s.arkenModel)
 				err := value.MethodByName(methodName).Call([]reflect.Value{reflect.ValueOf(service)})
@@ -75,9 +73,8 @@ func (s *APIServer) run(methodName string) func(w http.ResponseWriter, r *http.R
 			}
 			s.ServiceShow(w, r)
 		} else {
-			http.NotFound(w,r)
+			http.NotFound(w, r)
 		}
-
 
 	}
 }
@@ -104,8 +101,7 @@ func (s *APIServer) ServiceCreate() func(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-
-		w.Header().Add("Content-Type","application/json")
+		w.Header().Add("Content-Type", "application/json")
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -122,22 +118,57 @@ func (s *APIServer) ServiceDestroy() func(w http.ResponseWriter, r *http.Request
 
 		err := s.arkenModel.DestroyServiceCluster(serviceCluster)
 		if err == nil {
-			io.WriteString(w,"{\"serviceDestroyed\":\"ok\"}")
+			io.WriteString(w, "{\"serviceDestroyed\":\"ok\"}")
 		} else {
-			io.WriteString(w,fmt.Sprintf("{\"serviceDestroyed\":\"ko\", \"error\":\"%s\"}}", err))
+			io.WriteString(w, fmt.Sprintf("{\"serviceDestroyed\":\"ko\", \"error\":\"%s\"}}", err))
 		}
 
 	}
 }
 
-func (s *APIServer) ServiceStop() func(w http.ResponseWriter, r *http.Request) {
-	return s.run("StopService")
+type NotFoundError struct {
+	serviceId string
 }
 
-func (s *APIServer) ServiceStart() func(w http.ResponseWriter, r *http.Request) {
-	return s.run("StartService")
+func (e NotFoundError) Error() string {
+	return fmt.Sprintf("Service %s not found", e.serviceId)
 }
 
-func (s *APIServer) ServicePassivate() func(w http.ResponseWriter, r *http.Request) {
-	return s.run("PassivateService")
+func (s *APIServer) ServiceAction() func(w http.ResponseWriter, r *http.Request) {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		serviceId := mux.Vars(r)["serviceId"]
+		serviceAction := r.URL.Query().Get("action")
+
+		if serviceCluster, ok := s.arkenModel.Services[serviceId]; !ok {
+			http.Error(w, "Service not found", http.StatusNotFound)
+		} else {
+			err := s.runMethodFromAction(serviceAction, serviceCluster)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			} else {
+				s.ServiceShow(w, r)
+			}
+		}
+	}
+
+}
+
+func (s *APIServer) runMethodFromAction(actionName string, sc *goarken.ServiceCluster) error {
+	var err error
+	for _, service := range sc.GetInstances() {
+		switch actionName {
+		case "start":
+			_, err = s.arkenModel.StartService(service)
+		case "stop":
+			_, err = s.arkenModel.StopService(service)
+		case "passivate":
+			//TOSO
+			//s.arkenModel.PassivateService(service)
+		default:
+			return errors.New("Method not available")
+		}
+	}
+	return err
 }

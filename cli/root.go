@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/Sirupsen/logrus"
 	"github.com/arkenio/goarken/model"
+	"strings"
 )
 
 
@@ -72,7 +73,8 @@ func initConfig() {
 	viper.AddConfigPath("/etc/arken/")  // adding home directory as first search path
 	viper.AddConfigPath(".")  // adding home directory as first search path
 	viper.AutomaticEnv()          // read in environment variables that match
-
+	replacer := strings.NewReplacer(".", "_")
+	viper.SetEnvKeyReplacer(replacer)
 
 	viper.SetDefault("domainDir","/domains")
 	viper.SetDefault("serviceDir","/services")

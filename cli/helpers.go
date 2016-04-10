@@ -43,9 +43,19 @@ func CreateEtcdClient() client.KeysAPI {
 
 
 func CreateServiceDriver(etcdClient client.KeysAPI) (model.ServiceDriver, error) {
+	rancherHost := viper.GetString("rancher.host")
+	accessKey := viper.GetString("rancher.accessKey")
+	secretKey := viper.GetString("rancher.secretKey")
+
+
+
+
 	switch viper.GetString("driver") {
 	case "rancher":
-		sd, err := drivers.NewRancherServiceDriver(viper.GetString("rancher.host"),viper.GetString("rancher.accessKey"),viper.GetString("rancher.secretKey"))
+		log.Infof("Rancher host: %s",rancherHost)
+		log.Infof("Rancher Access key: %s", accessKey)
+		log.Infof("Rancher Secret key: ************************",)
+		sd, err := drivers.NewRancherServiceDriver(rancherHost,accessKey,secretKey)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Unable to connect to Rancher : %s", err.Error()))
 		}

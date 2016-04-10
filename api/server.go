@@ -75,22 +75,10 @@ func (s *APIServer) Start() {
 			s.ServiceDestroy(),
 		},
 		Route{
-			"ServiceStop",
+			"ServiceAction",
 			"PUT",
-			"/services/{serviceId}/stop",
-			s.ServiceStop(),
-		},
-		Route{
-			"ServiceStart",
-			"PUT",
-			"/services/{serviceId}/start",
-			s.ServiceStart(),
-		},
-		Route{
-			"ServicePassivate",
-			"PUT",
-			"/services/{serviceId}/passivate",
-			s.ServicePassivate(),
+			"/services/{serviceId}",
+			s.ServiceAction(),
 		},
 		Route{
 			"DomainShow",
@@ -107,6 +95,8 @@ func (s *APIServer) Start() {
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
+	router.PathPrefix("/doc").Handler(http.FileServer(FS(false)))
+	router.PathPrefix("/swagger.yaml").Handler(http.FileServer(FS(false)))
 	for _, route := range routes {
 		router.
 			Methods(route.Method).
@@ -115,7 +105,10 @@ func (s *APIServer) Start() {
 			Handler(route.HandlerFunc)
 	}
 
+
+
 	log.Info(fmt.Sprintf("Starting Arken API server on port : %d", s.port))
 	log.Info(fmt.Sprintf("   with driver : %s", viper.GetString("driver")))
+
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.port), router))
 }
