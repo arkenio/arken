@@ -3,7 +3,7 @@ info:
   title: Arken API
   version: "0.0.1"
 # the domain of the service
-host: localhost:8888
+host: {{.Host}}
 # array of all schemes that your API supports
 schemes:
   - http

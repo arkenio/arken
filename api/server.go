@@ -21,6 +21,7 @@ import (
 	"github.com/arkenio/goarken/model"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
+	"html/template"
 )
 
 // Create a new instance of the logger. You can have any number of instances.
@@ -96,7 +97,7 @@ func (s *APIServer) Start() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.PathPrefix("/doc").Handler(http.FileServer(FS(false)))
-	router.PathPrefix("/swagger.yaml").Handler(http.FileServer(FS(false)))
+	router.PathPrefix("/swagger.yaml").HandlerFunc(serveSwaggerYaml)
 	for _, route := range routes {
 		router.
 			Methods(route.Method).
@@ -111,4 +112,18 @@ func (s *APIServer) Start() {
 	log.Info(fmt.Sprintf("   with driver : %s", viper.GetString("driver")))
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.port), router))
+}
+
+
+func serveSwaggerYaml(w http.ResponseWriter, r *http.Request)  {
+
+	type TemplateVars struct {
+		Host string
+	}
+
+	swaggerTpl := FSMustString(false, "/swagger.tpl")
+	t := template.Must(template.New("swagger").Parse(swaggerTpl))
+
+
+	t.Execute(w, &TemplateVars{r.Host})
 }
