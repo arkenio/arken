@@ -125,5 +125,5 @@ func serveSwaggerYaml(w http.ResponseWriter, r *http.Request)  {
 	t := template.Must(template.New("swagger").Parse(swaggerTpl))
 
 
-	t.Execute(w, &TemplateVars{r.Host})
+	t.Execute(w, &TemplateVars{r.RemoteAddr})
 }

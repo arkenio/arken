@@ -2,8 +2,7 @@ swagger: '2.0'
 info:
   title: Arken API
   version: "0.0.1"
-# the domain of the service
-host: {{.Host}}
+
 # array of all schemes that your API supports
 schemes:
   - http
@@ -150,6 +149,13 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/ServiceConfig'
+    example:
+      name: nxio-000001
+      domain: test.devio
+      config:
+        rancherInfo:
+          templateId: community:nuxeo:0
+
 
   Location:
     type: object
@@ -188,7 +194,7 @@ definitions:
       templateId:
         type: string
         description: The Rancher template used for that service
-        default: "community:nuxeo:0"
+        default: ""
       environmentId:
         type: string
         description: |
@@ -204,7 +210,8 @@ definitions:
       currentStatus:
         type: string
         description: the status computed from healthState
-
+    example:
+      templateId: community:nuxeo:0
 
 
 
