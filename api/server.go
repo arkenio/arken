@@ -19,9 +19,15 @@ import (
 	"fmt"
 	"github.com/Sirupsen/logrus"
 	"github.com/arkenio/goarken/model"
+	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
+	"github.com/meatballhat/negroni-logrus"
+	"github.com/pjebs/restgate"
 	"github.com/spf13/viper"
+	"gopkg.in/tylerb/graceful.v1"
 	"html/template"
+	"time"
+	"html"
 )
 
 // Create a new instance of the logger. You can have any number of instances.
@@ -49,6 +55,62 @@ func NewAPIServer(model *model.Model) *APIServer {
 }
 
 func (s *APIServer) Start() {
+
+	log.Info(fmt.Sprintf("Starting Arken API server on port : %d", s.port))
+	log.Info(fmt.Sprintf("   with driver : %s", viper.GetString("driver")))
+
+	app := negroni.New()
+	app.Use(negroni.NewRecovery())
+	app.UseHandler(s.getRoutes())
+
+
+	graceful.Run(fmt.Sprintf(":%d", s.port), 5*time.Second, app)
+
+}
+
+func (s *APIServer) getRoutes() *mux.Router {
+
+	negAPI := negroni.New()
+	if gate := s.getRestGate(); gate != nil {
+		negAPI.Use(gate)
+	}
+	negAPI.Use(negronilogrus.NewMiddleware())
+	negAPI.UseHandler(s.getAPIRouter())
+
+	mainRouter := mux.NewRouter().StrictSlash(true)
+
+	mainRouter.PathPrefix("/doc").Handler(http.FileServer(FS(false)))
+	mainRouter.PathPrefix("/swagger.yaml").HandlerFunc(serveSwaggerYaml)
+	mainRouter.PathPrefix("/api").Handler(negAPI)
+
+	return mainRouter
+}
+
+func (s *APIServer) Main(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+}
+
+func (s *APIServer) getRestGate() *restgate.RESTGate {
+	if apiKeys := viper.GetStringMapString("apiKeys"); len(apiKeys) > 0 {
+		Key := make([]string, len(apiKeys))
+		Secret := make([]string, len(apiKeys))
+
+		i := 0
+		for key, value := range apiKeys {
+			Key[i] = key
+			Secret[i] = value
+			i++
+		}
+
+		return restgate.New("AuthKey", "AuthSecret", restgate.Static, restgate.Config{Context: nil, Key: Key, Secret: Secret, HTTPSProtectionOff: true})
+	} else {
+		return nil
+	}
+}
+
+
+func (s *APIServer) getAPIRouter() *mux.Router {
+
 
 	var routes = Routes{
 		Route{
@@ -95,27 +157,19 @@ func (s *APIServer) Start() {
 		},
 	}
 
-	router := mux.NewRouter().StrictSlash(true)
-	router.PathPrefix("/doc").Handler(http.FileServer(FS(false)))
-	router.PathPrefix("/swagger.yaml").HandlerFunc(serveSwaggerYaml)
+	apiRouter := mux.NewRouter()
 	for _, route := range routes {
-		router.
+		apiRouter.
 			Methods(route.Method).
 			Path(fmt.Sprintf("/api/v1%s", route.Pattern)).
 			Name(route.Name).
 			Handler(route.HandlerFunc)
 	}
 
-
-
-	log.Info(fmt.Sprintf("Starting Arken API server on port : %d", s.port))
-	log.Info(fmt.Sprintf("   with driver : %s", viper.GetString("driver")))
-
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", s.port), router))
+	return apiRouter
 }
 
-
-func serveSwaggerYaml(w http.ResponseWriter, r *http.Request)  {
+func serveSwaggerYaml(w http.ResponseWriter, r *http.Request) {
 
 	type TemplateVars struct {
 		Host string
@@ -123,7 +177,6 @@ func serveSwaggerYaml(w http.ResponseWriter, r *http.Request)  {
 
 	swaggerTpl := FSMustString(false, "/swagger.tpl")
 	t := template.Must(template.New("swagger").Parse(swaggerTpl))
-
 
 	t.Execute(w, &TemplateVars{r.RemoteAddr})
 }

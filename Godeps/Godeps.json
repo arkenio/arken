@@ -18,15 +18,20 @@
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/drivers",
-			"Rev": "e7903fe0d5a896ea17c6deb0304a9f23ba1407b0"
+			"Rev": "05a462c9479ebed5ffa462bc300204c91313cf7b"
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/model",
-			"Rev": "e7903fe0d5a896ea17c6deb0304a9f23ba1407b0"
+			"Rev": "05a462c9479ebed5ffa462bc300204c91313cf7b"
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/storage",
-			"Rev": "e7903fe0d5a896ea17c6deb0304a9f23ba1407b0"
+			"Rev": "05a462c9479ebed5ffa462bc300204c91313cf7b"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/negroni",
+			"Comment": "v0.1-70-gc7477ad",
+			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
 		},
 		{
 			"ImportPath": "github.com/coreos/etcd/client",
@@ -115,8 +120,20 @@
 			"Rev": "c265cfa48dda6474e208715ca93e987829f572f8"
 		},
 		{
+			"ImportPath": "github.com/meatballhat/negroni-logrus",
+			"Rev": "b8551f24ff84b857fd7ba43a2db4c0b97451249d"
+		},
+		{
 			"ImportPath": "github.com/mitchellh/mapstructure",
 			"Rev": "d2dd0262208475919e1a362f675cfc0e7c10e905"
+		},
+		{
+			"ImportPath": "github.com/pjebs/jsonerror",
+			"Rev": "236f3c18307ad38e59fc3f85e7bde1bef6233782"
+		},
+		{
+			"ImportPath": "github.com/pjebs/restgate",
+			"Rev": "89aa665301c31726ce9211688d0708ef6dcce5d3"
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/client",
@@ -152,6 +169,10 @@
 			"Rev": "e45385e9b226f570b1f086bf287b25d3d4117776"
 		},
 		{
+			"ImportPath": "golang.org/x/net/netutil",
+			"Rev": "e45385e9b226f570b1f086bf287b25d3d4117776"
+		},
+		{
 			"ImportPath": "golang.org/x/sys/unix",
 			"Rev": "a80ff226bd294315526e7ae48959d55635143ea7"
 		},
@@ -159,6 +180,15 @@
 			"ImportPath": "gopkg.in/fsnotify.v1",
 			"Comment": "v1.2.10",
 			"Rev": "875cf421b32f8f1b31bd43776297876d01542279"
+		},
+		{
+			"ImportPath": "gopkg.in/tylerb/graceful.v1",
+			"Comment": "v1.2.5",
+			"Rev": "9a3d4236b03bb5d26f7951134d248f9d5510d599"
+		},
+		{
+			"ImportPath": "gopkg.in/unrolled/render.v1",
+			"Rev": "198ad4d8b8a4612176b804ca10555b222a086b40"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",

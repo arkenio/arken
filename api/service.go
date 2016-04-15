@@ -165,7 +165,7 @@ func (s *APIServer) runMethodFromAction(actionName string, sc *goarken.ServiceCl
 			_, err = s.arkenModel.StopService(service)
 		case "passivate":
 			//TOSO
-			//s.arkenModel.PassivateService(service)
+			s.arkenModel.PassivateService(service)
 		default:
 			return errors.New("Method not available")
 		}

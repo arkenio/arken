@@ -4,5 +4,8 @@
 driver: rancher
 rancher:
   host: http://192.168.99.100:8080/v1/projects/1a5
-  accessKey: 8586D010419D0AC99971
-  secretKey: E1euuc8mYpiZWMdAz7q4a4rWVi4UUpcxuv35vw5j
+  accessKey: 0CC5D2C9FC27D9FEA159
+  secretKey: Tfckm7VL1q8cievUHe8xfrSoq3LvexcfVL4BFLfy
+
+#apiKeys:
+#  1234: secret
