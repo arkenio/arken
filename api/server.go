@@ -27,7 +27,6 @@ import (
 	"gopkg.in/tylerb/graceful.v1"
 	"html/template"
 	"time"
-	"html"
 )
 
 // Create a new instance of the logger. You can have any number of instances.
@@ -86,26 +85,45 @@ func (s *APIServer) getRoutes() *mux.Router {
 	return mainRouter
 }
 
-func (s *APIServer) Main(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-}
 
 func (s *APIServer) getRestGate() *restgate.RESTGate {
-	if apiKeys := viper.GetStringMapString("apiKeys"); len(apiKeys) > 0 {
+	if apiKeys := viper.GetStringMap("apiKeys"); len(apiKeys) > 0 {
 		Key := make([]string, len(apiKeys))
 		Secret := make([]string, len(apiKeys))
-
 		i := 0
-		for key, value := range apiKeys {
-			Key[i] = key
-			Secret[i] = value
-			i++
+		for k, value := range apiKeys {
+			key, value := s.extractKeyValueFromConf(value)
+			if key != "" && value != "" {
+				Key[i] = key
+				log.Infof("Adding key for %s : %s", k, Key[i])
+				Secret[i] = value
+
+				i++
+			} else {
+				log.Warnf("Unable to parse accessKey %s", k)
+			}
 		}
 
 		return restgate.New("AuthKey", "AuthSecret", restgate.Static, restgate.Config{Context: nil, Key: Key, Secret: Secret, HTTPSProtectionOff: true})
 	} else {
 		return nil
 	}
+}
+
+func (s *APIServer) extractKeyValueFromConf(value interface{}) (string, string) {
+	var k,v string
+	defer func() (string,string) {
+		if r := recover(); r != nil {
+			return "",""
+		}
+		return k,v
+	}()
+
+	mapstring := value.(map[interface{}]interface{})
+	k = mapstring[string("accessKey")].(string)
+	v = mapstring[string("secretKey")].(string)
+	return k,v
+
 }
 
 
