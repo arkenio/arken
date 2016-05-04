@@ -21,12 +21,32 @@ Two endpoints provides some information on Arken.
 
     GET http://localhost:8888/api/v1/services
     GET http://localhost:8888/api/v1/services/{serviceId}
-    PUT http://localhost:8888/api/v1/services/{serviceId}/start
-    PUT http://localhost:8888/api/v1/services/{serviceId}/stop
-    PUT http://localhost:8888/api/v1/services/{serviceId}/passivate
+    PUT http://localhost:8888/api/v1/services/{serviceId}?action=start
+    PUT http://localhost:8888/api/v1/services/{serviceId}?action=stop
+    PUT http://localhost:8888/api/v1/services/{serviceId}?action=passivate
 
     GET http://localhost:8888/api/v1/domains/
     GET http://localhost:8888/api/v1/domain/{domainName}
+
+For complete API documentation go to the doc page : http://localhost:8888/doc/
+
+
+### Web Socket 
+
+A websocket is available at ws://localhost:8888/ws/ where ModelEvent are pushed.
+
+
+### Authentication
+
+By adding some keys in the `arken.yml` configuration file, you can add your some
+credentials like that :
+
+
+    apiKeys:
+      akey:
+        accessKey: A23DR
+        secretKey: secret
+
 
 
 ## Report & Contribute
@@ -34,7 +54,7 @@ Two endpoints provides some information on Arken.
 
 We are glad to welcome new developers on this initiative, and even simple usage feedback is great.
 - Ask your questions on [Nuxeo Answers](http://answers.nuxeo.com)
-- Report issues on this github repository (see [issues link](http://github.com/arkenio/arkenctl/issues) on the right)
+- Report issues on this github repository (see [issues link](http://github.com/arkenio/arken/issues) on the right)
 - Contribute: Send pull requests!
 
 
