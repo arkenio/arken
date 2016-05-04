@@ -88,21 +88,31 @@ func (s *APIServer) Start() {
 }
 
 func (s *APIServer) getRoutes() *mux.Router {
+	gate := s.getRestGate()
 
+	// Main API
 	negAPI := negroni.New()
-	if gate := s.getRestGate(); gate != nil {
+	if gate != nil {
 		negAPI.Use(gate)
 	}
 	negAPI.Use(negronilogrus.NewMiddleware())
 	negAPI.UseHandler(s.getAPIRouter())
+
+
+	// WebSocket
+	ws := negroni.New()
+	if gate != nil {
+		ws.Use(gate)
+	}
+	ws.UseHandlerFunc(s.serveWs)
+
 
 	mainRouter := mux.NewRouter().StrictSlash(true)
 
 	mainRouter.PathPrefix("/doc").Handler(http.FileServer(FS(false)))
 	mainRouter.PathPrefix("/swagger.yaml").HandlerFunc(serveSwaggerYaml)
 	mainRouter.PathPrefix("/api").Handler(negAPI)
-	mainRouter.PathPrefix("/ws").Handler(negAPI)
-
+	mainRouter.PathPrefix("/ws").Handler(ws)
 
 	return mainRouter
 }
@@ -203,7 +213,7 @@ func (s *APIServer) getAPIRouter() *mux.Router {
 			Handler(route.HandlerFunc)
 	}
 
-	apiRouter.PathPrefix("/ws").HandlerFunc(s.serveWs)
+
 
 	return apiRouter
 }
