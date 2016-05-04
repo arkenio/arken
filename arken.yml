@@ -7,16 +7,16 @@ rancher:
   accessKey: A27EF276A4DEA151585A
   secretKey: nutf2WY4wUtRjgaqcYu9a38JMbt9goA5hJUoTCX9
 
-apiKeys:
-  io:
-    accessKey: A23DR
-    secretKey: secret
+#apiKeys:
+#  io:
+#    accessKey: A23DR
+#    secretKey: secret
 
-  badKeys:
-    accessKey: 1234 #Number
-    secretKey: secret
+#  badKeys:
+#    accessKey: 1234 #Number
+#    secretKey: secret
 
-  badKeys2:
-    accesKey: A23DR #bad key name
-    scrKey: secret #bad key name
+#  badKeys2:
+#    accesKey: A23DR #bad key name
+#    scrKey: secret #bad key name
 

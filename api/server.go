@@ -21,6 +21,7 @@ import (
 	"github.com/arkenio/goarken/model"
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/websocket"
 	"github.com/meatballhat/negroni-logrus"
 	"github.com/pjebs/restgate"
 	"github.com/spf13/viper"
@@ -44,12 +45,20 @@ type Routes []Route
 type APIServer struct {
 	arkenModel *model.Model
 	port       int
+	// Needed for websocket
+	upgrader   websocket.Upgrader
+	hub        *hub
 }
 
 func NewAPIServer(model *model.Model) *APIServer {
 	return &APIServer{
 		arkenModel: model,
 		port:       viper.GetInt("port"),
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		},
+		hub: newHub(),
 	}
 }
 
@@ -62,6 +71,17 @@ func (s *APIServer) Start() {
 	app.Use(negroni.NewRecovery())
 	app.UseHandler(s.getRoutes())
 
+	go s.hub.run()
+
+	go func() {
+		c := s.arkenModel.Listen()
+		for {
+			select {
+			case me := <- c:
+				s.hub.broadcast <- me
+			}
+		}
+	}()
 
 	graceful.Run(fmt.Sprintf(":%d", s.port), 5*time.Second, app)
 
@@ -81,10 +101,11 @@ func (s *APIServer) getRoutes() *mux.Router {
 	mainRouter.PathPrefix("/doc").Handler(http.FileServer(FS(false)))
 	mainRouter.PathPrefix("/swagger.yaml").HandlerFunc(serveSwaggerYaml)
 	mainRouter.PathPrefix("/api").Handler(negAPI)
+	mainRouter.PathPrefix("/ws").Handler(negAPI)
+
 
 	return mainRouter
 }
-
 
 func (s *APIServer) getRestGate() *restgate.RESTGate {
 	if apiKeys := viper.GetStringMap("apiKeys"); len(apiKeys) > 0 {
@@ -111,24 +132,22 @@ func (s *APIServer) getRestGate() *restgate.RESTGate {
 }
 
 func (s *APIServer) extractKeyValueFromConf(value interface{}) (string, string) {
-	var k,v string
-	defer func() (string,string) {
+	var k, v string
+	defer func() (string, string) {
 		if r := recover(); r != nil {
-			return "",""
+			return "", ""
 		}
-		return k,v
+		return k, v
 	}()
 
 	mapstring := value.(map[interface{}]interface{})
 	k = mapstring[string("accessKey")].(string)
 	v = mapstring[string("secretKey")].(string)
-	return k,v
+	return k, v
 
 }
 
-
 func (s *APIServer) getAPIRouter() *mux.Router {
-
 
 	var routes = Routes{
 		Route{
@@ -183,6 +202,8 @@ func (s *APIServer) getAPIRouter() *mux.Router {
 			Name(route.Name).
 			Handler(route.HandlerFunc)
 	}
+
+	apiRouter.PathPrefix("/ws").HandlerFunc(s.serveWs)
 
 	return apiRouter
 }
