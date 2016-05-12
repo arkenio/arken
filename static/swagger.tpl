@@ -125,10 +125,6 @@ definitions:
   Service:
     type: object
     properties:
-      index:
-        type: string
-      nodeKey:
-        type: string
       location:
         $ref: '#/definitions/Location'
       domain:
