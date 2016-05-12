@@ -22,5 +22,5 @@ _cgo_export.*
 gogeta
 tmp
 _testmain.go
-
+arken.yml
 *.exe
