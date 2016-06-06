@@ -17,6 +17,7 @@ package cli
 import (
 	"github.com/spf13/cobra"
 	"github.com/arkenio/arken/api"
+	"github.com/arkenio/arken/passivation"
 	"github.com/spf13/viper"
 )
 
@@ -25,7 +26,12 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Starts the Arken dameon",
 	Run: func(cmd *cobra.Command, args []string) {
+
+
+		go passivation.NewHandler(arkenModel).Start()
 		api.NewAPIServer(arkenModel).Start()
+
+
 	},
 }
 
