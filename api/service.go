@@ -88,6 +88,9 @@ func (s *APIServer) ServiceCreate() func(w http.ResponseWriter, r *http.Request)
 
 		err := decoder.Decode(service)
 		service.Status = goarken.NewInitialStatus(goarken.STOPPED_STATUS, service)
+		if service.Config.Passivation == nil {
+			service.Config.Passivation = goarken.DefaultPassivation()
+		}
 
 		if err != nil {
 			log.Errorf("Error when decoding service %s : %s", service.Name, err.Error())
