@@ -68,6 +68,22 @@ paths:
             $ref: '#/definitions/Error'
 
     put:
+      summary: Updates the service
+      description: |
+        Updates the service
+      parameters:
+        - name: serviceId
+          in: path
+          description: Id of the service
+          required: true
+          type: string
+        - in: "body"
+          name: "body"
+          description: "The update Service definition. Only Domain, Config.Environment and Config.Passivation have effects"
+          required: true
+          schema:
+            $ref: "#/definitions/ServiceForCreation"
+    post:
       summary: Start/Stop/Passivate the service
       description: |
         Start/Stop/Passivate the service
@@ -151,6 +167,8 @@ definitions:
       config:
         rancherInfo:
           templateId: community:nuxeo:0
+        passivation:
+          delayInSeconds: 43200
 
 
   Location:

@@ -149,7 +149,7 @@ func (s *APIServer) ServiceAction() func(w http.ResponseWriter, r *http.Request)
 		if serviceCluster, ok := s.arkenModel.Services[serviceId]; !ok {
 			http.Error(w, "Service not found", http.StatusNotFound)
 		} else {
-			err := s.runMethodFromAction(serviceAction, serviceCluster)
+			err := s.runMethodFromAction(r, serviceAction, serviceCluster)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			} else {
@@ -160,7 +160,29 @@ func (s *APIServer) ServiceAction() func(w http.ResponseWriter, r *http.Request)
 
 }
 
-func (s *APIServer) runMethodFromAction(actionName string, sc *goarken.ServiceCluster) error {
+func (s *APIServer) ServiceUpdate() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		decoder := json.NewDecoder(r.Body)
+		updatedService := &goarken.Service{}
+		err := decoder.Decode(updatedService)
+		if(err != nil) {
+			http.Error(w, "Unable to read service : "  + err.Error(), http.StatusBadRequest)
+		}
+
+		serviceId := mux.Vars(r)["serviceId"]
+
+		if _, ok := s.arkenModel.Services[serviceId]; !ok {
+			http.Error(w, "Service not found", http.StatusNotFound)
+		} else {
+			s.arkenModel.UpdateService(updatedService)
+		}
+	}
+}
+
+
+
+func (s *APIServer) runMethodFromAction(r *http.Request, actionName string, sc *goarken.ServiceCluster) error {
 	var err error
 	for _, service := range sc.GetInstances() {
 		switch actionName {
@@ -169,8 +191,9 @@ func (s *APIServer) runMethodFromAction(actionName string, sc *goarken.ServiceCl
 		case "stop":
 			_, err = s.arkenModel.StopService(service)
 		case "passivate":
-			//TOSO
 			s.arkenModel.PassivateService(service)
+		case "upgrade":
+			s.arkenModel.UpgradeService(service)
 		default:
 			return errors.New("Method not available")
 		}

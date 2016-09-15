@@ -186,9 +186,15 @@ func (s *APIServer) getAPIRouter() *mux.Router {
 		},
 		Route{
 			"ServiceAction",
-			"PUT",
+			"POST",
 			"/services/{serviceId}",
 			s.ServiceAction(),
+		},
+		Route{
+			"ServiceUpdate",
+			"PUT",
+			"/services/{serviceId}",
+			s.ServiceUpdate(),
 		},
 		Route{
 			"DomainShow",

@@ -43,6 +43,8 @@ func CreateEtcdClient() client.KeysAPI {
 
 
 func CreateServiceDriver(etcdClient client.KeysAPI) (model.ServiceDriver, error) {
+
+
 	rancherHost := viper.GetString("rancher.host")
 	accessKey := viper.GetString("rancher.accessKey")
 	secretKey := viper.GetString("rancher.secretKey")

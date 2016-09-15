@@ -2,9 +2,6 @@
 	"ImportPath": "github.com/arkenio/arken",
 	"GoVersion": "go1.5",
 	"GodepVersion": "v62",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/BurntSushi/toml",
@@ -18,15 +15,15 @@
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/drivers",
-			"Rev": "c3337d5ea25c480ee7e8776e3199f83a0c3dfce2"
+			"Rev": "2b6b16f6de9014177f77c173ba4e6dc0cdcab69c"
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/model",
-			"Rev": "c3337d5ea25c480ee7e8776e3199f83a0c3dfce2"
+			"Rev": "2b6b16f6de9014177f77c173ba4e6dc0cdcab69c"
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/storage",
-			"Rev": "c3337d5ea25c480ee7e8776e3199f83a0c3dfce2"
+			"Rev": "2b6b16f6de9014177f77c173ba4e6dc0cdcab69c"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/negroni",
