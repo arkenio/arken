@@ -84,13 +84,13 @@ paths:
           schema:
             $ref: "#/definitions/ServiceForCreation"
     post:
-      summary: Start/Stop/Passivate the service
+      summary: Start/Stop/Upgrade/FinishUpgrade/Rollback/Passivate the service
       description: |
-        Start/Stop/Passivate the service
+        Start/Stop/Upgrade/FInishUpgarde/Rollback//Passivate the service
       parameters:
         - name: serviceId
           in: path
-          description: Id of the service
+          description: Id of the service. For upgrade, the service is upgraded if a new definition was pushed with PUT previously
           required: true
           type: string
         - name: action
@@ -98,7 +98,7 @@ paths:
           description: Id of the service
           required: true
           type: string
-          enum: ['start','stop','passivate']
+          enum: ['start','stop','upgrade','finishupgrade','rollback','passivate']
 
       responses:
         200:

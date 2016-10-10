@@ -48,6 +48,9 @@ func (s *APIServer) ServiceShow(w http.ResponseWriter, r *http.Request) {
 
 	if service, ok := s.arkenModel.Services[serviceId]; ok {
 		w.Header().Add("Content-Type", "application/json")
+		for _, s := range service.GetInstances() {
+			s.Actions = goarken.GetDefaultActionsForStatus(s)
+		}
 		if err := json.NewEncoder(w).Encode(service); err != nil {
 			http.Error(w, err.Error(), 500)
 		}
@@ -166,10 +169,10 @@ func (s *APIServer) ServiceUpdate() func(w http.ResponseWriter, r *http.Request)
 		decoder := json.NewDecoder(r.Body)
 		updatedService := &goarken.Service{}
 		err := decoder.Decode(updatedService)
-		if(err != nil) {
-			http.Error(w, "Unable to read service : "  + err.Error(), http.StatusBadRequest)
-		}
 
+		if err != nil {
+			http.Error(w, "Unable to read service : "+err.Error(), http.StatusBadRequest)
+		}
 		serviceId := mux.Vars(r)["serviceId"]
 
 		if _, ok := s.arkenModel.Services[serviceId]; !ok {
@@ -179,8 +182,6 @@ func (s *APIServer) ServiceUpdate() func(w http.ResponseWriter, r *http.Request)
 		}
 	}
 }
-
-
 
 func (s *APIServer) runMethodFromAction(r *http.Request, actionName string, sc *goarken.ServiceCluster) error {
 	var err error
@@ -194,9 +195,30 @@ func (s *APIServer) runMethodFromAction(r *http.Request, actionName string, sc *
 			s.arkenModel.PassivateService(service)
 		case "upgrade":
 			s.arkenModel.UpgradeService(service)
+		case "finishupgrade":
+		    s.arkenModel.FinishUpgradeService(service)
+		case "rollback":
+		    s.arkenModel.RollbackService(service) 	
 		default:
 			return errors.New("Method not available")
 		}
 	}
 	return err
+}
+
+func (s *APIServer) serviceNeedToBeUpgraded() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		serviceId := mux.Vars(r)["serviceId"]
+		if serviceCluster, ok := s.arkenModel.Services[serviceId]; !ok {
+			http.Error(w, "Service not found", http.StatusNotFound)
+		} else {
+			log.Infof("Check if service needs to be upgarded for the service %v", serviceId)
+			for _, service := range serviceCluster.GetInstances() {
+				if serviceId == service.Name {
+					s.arkenModel.NeedToBeUpgraded(service)
+				}
+			}
+		}
+
+	}
 }
