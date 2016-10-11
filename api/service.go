@@ -47,11 +47,15 @@ func (s *APIServer) ServiceShow(w http.ResponseWriter, r *http.Request) {
 	serviceId := mux.Vars(r)["serviceId"]
 
 	if service, ok := s.arkenModel.Services[serviceId]; ok {
+		//create new instance to override the actions with a pretty format
+		ser := goarken.NewServiceCluster(service.Name)
 		w.Header().Add("Content-Type", "application/json")
 		for _, s := range service.GetInstances() {
-			s.Actions = goarken.GetDefaultActionsForStatus(s)
+			ss := *s
+			ss.Actions = goarken.GetPrettyActions(&ss, r.URL)
+			ser.Add(&ss)
 		}
-		if err := json.NewEncoder(w).Encode(service); err != nil {
+		if err := json.NewEncoder(w).Encode(ser); err != nil {
 			http.Error(w, err.Error(), 500)
 		}
 	} else {
@@ -196,9 +200,9 @@ func (s *APIServer) runMethodFromAction(r *http.Request, actionName string, sc *
 		case "upgrade":
 			s.arkenModel.UpgradeService(service)
 		case "finishupgrade":
-		    s.arkenModel.FinishUpgradeService(service)
+			s.arkenModel.FinishUpgradeService(service)
 		case "rollback":
-		    s.arkenModel.RollbackService(service) 	
+			s.arkenModel.RollbackService(service)
 		default:
 			return errors.New("Method not available")
 		}
