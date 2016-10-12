@@ -149,6 +149,11 @@ definitions:
         type: string
       status:
         $ref: '#/definitions/Status'
+      actions:
+        type: array
+        description: the list of actions that can be invoked on the service.
+        items:
+          $ref: '#/definitions/Action'
       config:
         $ref: '#/definitions/ServiceConfig'
 
@@ -188,6 +193,16 @@ definitions:
         type: string
       expected:
         type: string
+  
+  Action:
+    type: object
+    properties:
+      name:
+        type: string
+      method:
+        type: string
+      url:
+        type: string     
 
   ServiceConfig:
     type: object
