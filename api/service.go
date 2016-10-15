@@ -95,6 +95,9 @@ func (s *APIServer) ServiceCreate() func(w http.ResponseWriter, r *http.Request)
 
 		err := decoder.Decode(service)
 		service.Status = goarken.NewInitialStatus(goarken.STOPPED_STATUS, service)
+		service.Actions = make([]string, 0)
+		service.Actions = goarken.InitActions(service)
+			
 		if service.Config.Passivation == nil {
 			service.Config.Passivation = goarken.DefaultPassivation()
 		}
