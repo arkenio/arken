@@ -15,15 +15,15 @@
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/drivers",
-			"Rev": "2b6b16f6de9014177f77c173ba4e6dc0cdcab69c"
+			"Rev": "1de619dcadd91978b50b534fd3ea686209880def"
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/model",
-			"Rev": "2b6b16f6de9014177f77c173ba4e6dc0cdcab69c"
+			"Rev": "1de619dcadd91978b50b534fd3ea686209880def"
 		},
 		{
 			"ImportPath": "github.com/arkenio/goarken/storage",
-			"Rev": "2b6b16f6de9014177f77c173ba4e6dc0cdcab69c"
+			"Rev": "1de619dcadd91978b50b534fd3ea686209880def"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/negroni",
