@@ -18,7 +18,7 @@ import (
 
 	"fmt"
 	"github.com/Sirupsen/logrus"
-	"github.com/arkenio/goarken/model"
+	"github.com/arkenio/arken/goarken/model"
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"

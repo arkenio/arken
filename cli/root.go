@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/Sirupsen/logrus"
-	"github.com/arkenio/goarken/model"
+	"github.com/arkenio/arken/goarken/model"
 	"strings"
 )
 

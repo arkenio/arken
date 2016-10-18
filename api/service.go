@@ -17,7 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	goarken "github.com/arkenio/goarken/model"
+	goarken "github.com/arkenio/arken/goarken/model"
 	"github.com/gorilla/mux"
 	"io"
 	"net/http"

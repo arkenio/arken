@@ -14,9 +14,9 @@
 package cli
 import (
 	"github.com/coreos/etcd/client"
-	"github.com/arkenio/goarken/model"
-	"github.com/arkenio/goarken/storage"
-	"github.com/arkenio/goarken/drivers"
+	"github.com/arkenio/arken/goarken/model"
+	"github.com/arkenio/arken/goarken/storage"
+	"github.com/arkenio/arken/goarken/drivers"
 	"github.com/spf13/viper"
 	"errors"
 	"fmt"
