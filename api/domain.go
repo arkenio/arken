@@ -15,7 +15,7 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/arkenio/goarken/model"
+	"github.com/arkenio/arken/goarken/model"
 	"github.com/gorilla/mux"
 	"net/http"
 )

@@ -16,7 +16,7 @@ package passivation
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/arkenio/goarken/model"
+	"github.com/arkenio/arken/goarken/model"
 	"time"
 )
 

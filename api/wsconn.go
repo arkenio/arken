@@ -15,7 +15,7 @@ package api
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/arkenio/goarken/model"
+	"github.com/arkenio/arken/goarken/model"
 	"net/http"
 	"time"
 	"encoding/json"
