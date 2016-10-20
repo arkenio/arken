@@ -84,7 +84,7 @@ func Test_EtcdWatcher(t *testing.T) {
 		w.PersistService(service)
 
 		Convey("When i get an etcd node from that service", func() {
-			resp, _ := kapi.Get(context.Background(), fmt.Sprintf("/services/%s/1/status/expected", testServiceName), &client.GetOptions{Recursive: true})
+			resp, _ := kapi.Get(context.Background(), fmt.Sprintf("/services/%s/status/expected", testServiceName), &client.GetOptions{Recursive: true})
 			Convey("Then it can get the env key from it", func() {
 				So(resp, ShouldNotBeNil)
 				name, error := getEnvForNode(resp.Node)
@@ -130,9 +130,7 @@ func Test_EtcdWatcher(t *testing.T) {
 		Convey("When i modify a service", func() {
 
 			initialNotifCount := notifCount
-			sc, _ := w.LoadService(testServiceName)
-
-			service = sc.Instances[0]
+			service, _ := w.LoadService(testServiceName)
 
 			service.Status.Expected = STARTED_STATUS
 			service.Config.RancherInfo = &RancherInfoType{EnvironmentId: "bla"}
@@ -140,8 +138,7 @@ func Test_EtcdWatcher(t *testing.T) {
 			w.PersistService(service)
 
 			Convey("Then the service should be modified", func() {
-				sc, _ := w.LoadService(testServiceName)
-				service = sc.Instances[0]
+				service, _ := w.LoadService(testServiceName)
 				So(service.Status.Expected, ShouldEqual, STARTED_STATUS)
 				So(service.Config.RancherInfo.EnvironmentId, ShouldEqual, "bla")
 			})
