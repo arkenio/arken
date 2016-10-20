@@ -149,16 +149,16 @@ func GetServiceFromPath(servicePath string, kapi etcd.KeysAPI) (*Service, error)
 		return nil, errors.New(fmt.Sprintf("Unable to get information for service %s from etcd", servicePath))
 	}
 
-	return getServiceFromNode(response.Node), nil
+	return getServiceFromNode(response.Node)
 }
 
-func getServiceFromNode(serviceNode *etcd.Node) *Service {
+func getServiceFromNode(serviceNode *etcd.Node) (*Service, error) {
 
 	service, err := newService(serviceNode)
-	if err == nil {
-		log.Infof("Can not get service from node %v", serviceNode)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Unable to get information for service %s from node", serviceNode))
 	}
-	return service
+	return service, nil
 }
 
 func (w *Watcher) registerDomain(node *etcd.Node, action string) {
@@ -225,15 +225,16 @@ func (w *Watcher) registerService(node *etcd.Node, action string) {
 	response, err := w.kapi.Get(context.Background(), w.servicePrefix+"/"+serviceName, &etcd.GetOptions{Recursive: true, Sort: true})
 
 	if err == nil {
-		sc := getServiceFromNode(response.Node)
-		w.broadcaster.Write(NewModelEvent("update", sc))
+		sc, err := getServiceFromNode(response.Node)
+		if err == nil {
+			w.broadcaster.Write(NewModelEvent("update", sc))
+		}
 	} else {
 		log.Errorf("Unable to get information for service %s from etcd (%v) update on %s", serviceName, err, node.Key)
 	}
 }
 
 func newService(serviceNode *etcd.Node) (*Service, error) {
-
 	serviceName, err := getEnvForNode(serviceNode)
 	if err != nil {
 		return nil, err
@@ -442,7 +443,10 @@ func (w *Watcher) LoadAllServices() (map[string]*Service, error) {
 	response, err := w.kapi.Get(context.Background(), w.servicePrefix, &etcd.GetOptions{Recursive: true, Sort: true})
 	if err == nil {
 		for _, serviceNode := range response.Node.Nodes {
-			sc := getServiceFromNode(serviceNode)
+			sc, err := getServiceFromNode(serviceNode)
+			if err != nil {
+				return nil, err
+			}
 			result[sc.Name] = sc
 		}
 	} else {
@@ -457,7 +461,7 @@ func (w *Watcher) LoadService(serviceName string) (*Service, error) {
 	if err != nil {
 		return nil, err
 	} else {
-		return getServiceFromNode(response.Node), nil
+		return getServiceFromNode(response.Node)
 	}
 
 }
