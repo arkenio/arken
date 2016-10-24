@@ -20,7 +20,6 @@ import (
 	. "github.com/arkenio/arken/goarken/model"
 	etcd "github.com/coreos/etcd/client"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -143,29 +142,23 @@ func GetDomainFromNode(node *etcd.Node) (*Domain, error) {
 	return NewDomain(node)
 }
 
-func GetServiceClusterFromPath(serviceClusterPath string, kapi etcd.KeysAPI) (*ServiceCluster, error) {
+func GetServiceFromPath(servicePath string, kapi etcd.KeysAPI) (*Service, error) {
 	// Get service's root node instead of changed node.
-	response, err := kapi.Get(context.Background(), serviceClusterPath, &etcd.GetOptions{Recursive: true})
+	response, err := kapi.Get(context.Background(), servicePath, &etcd.GetOptions{Recursive: true})
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Unable to get information for service %s from etcd", serviceClusterPath))
+		return nil, errors.New(fmt.Sprintf("Unable to get information for service %s from etcd", servicePath))
 	}
 
-	return getServiceClusterFromNode(response.Node), nil
+	return getServiceFromNode(response.Node)
 }
 
-func getServiceClusterFromNode(clusterNode *etcd.Node) *ServiceCluster {
+func getServiceFromNode(serviceNode *etcd.Node) (*Service, error) {
 
-	sc := NewServiceCluster(clusterNode.Key)
-	for _, indexNode := range clusterNode.Nodes {
-		service, err := newService(indexNode)
-		if err == nil {
-			sc.Add(service)
-			sc.Name = service.Name
-		}
+	service, err := newService(serviceNode)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Unable to get information for service %s from node", serviceNode))
 	}
-
-	return sc
-
+	return service, nil
 }
 
 func (w *Watcher) registerDomain(node *etcd.Node, action string) {
@@ -224,7 +217,7 @@ func (w *Watcher) registerService(node *etcd.Node, action string) {
 	}
 
 	if action == "delete" && node.Key == w.servicePrefix+"/"+serviceName {
-		w.broadcaster.Write(NewModelEvent("delete", &ServiceCluster{Name: serviceName}))
+		w.broadcaster.Write(NewModelEvent("delete", &Service{Name: serviceName}))
 		return
 	}
 
@@ -232,34 +225,24 @@ func (w *Watcher) registerService(node *etcd.Node, action string) {
 	response, err := w.kapi.Get(context.Background(), w.servicePrefix+"/"+serviceName, &etcd.GetOptions{Recursive: true, Sort: true})
 
 	if err == nil {
-		sc := getServiceClusterFromNode(response.Node)
-		w.broadcaster.Write(NewModelEvent("update", sc))
+		sc, err := getServiceFromNode(response.Node)
+		if err == nil {
+			w.broadcaster.Write(NewModelEvent("update", sc))
+		}
 	} else {
 		log.Errorf("Unable to get information for service %s from etcd (%v) update on %s", serviceName, err, node.Key)
 	}
 }
 
 func newService(serviceNode *etcd.Node) (*Service, error) {
-
-	serviceIndex, err := getEnvIndexForNode(serviceNode)
-	if err != nil {
-		return nil, err
-	}
-
 	serviceName, err := getEnvForNode(serviceNode)
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := strconv.Atoi(serviceIndex); err != nil {
-		// Don't handle node that are not integer (ie config node)
-		return nil, errors.New("Not a service index node")
-	}
-
 	service := &Service{}
 	service.Location = &Location{}
 	service.Config = &ServiceConfig{Robots: ""}
-	service.Index = serviceIndex
 	service.Name = serviceName
 	service.NodeKey = serviceNode.Key
 
@@ -335,7 +318,7 @@ func (w *Watcher) PersistService(s *Service) (*Service, error) {
 			} else {
 				err = err2
 			}
-            log.Debugf("Persisting actions %v on service %s", s.Actions, s.Name)
+			log.Debugf("Persisting actions %v on service %s", s.Actions, s.Name)
 			if len(s.Actions.([]string)) > 0 { //don't perists actions on intermediate states
 				bytes, err2 = json.Marshal(s.Actions.([]string))
 				if err2 == nil {
@@ -398,25 +381,15 @@ func (w *Watcher) PersistService(s *Service) (*Service, error) {
 }
 
 func computeNodeKey(s *Service, servicePrefix string) string {
-	return fmt.Sprintf("/%s/%s/%s", servicePrefix, s.Name, s.Index)
+	return fmt.Sprintf("/%s/%s", servicePrefix, s.Name)
 }
 
 func computeDomainNodeKey(domainName string, domainPrefix string) string {
 	return fmt.Sprintf("/%s/%s", domainPrefix, domainName)
 }
 
-func computeClusterKey(serviceName string, servicePrefix string) string {
+func computeServiceKey(serviceName string, servicePrefix string) string {
 	return fmt.Sprintf("/%s/%s/", servicePrefix, serviceName)
-}
-
-func getEnvIndexForNode(node *etcd.Node) (string, error) {
-	matches := serviceRegexp.FindStringSubmatch(node.Key)
-	if len(matches) > 1 {
-		parts := strings.Split(matches[1], "/")
-		return parts[1], nil
-	} else {
-		return "", errors.New("Unable to extract env for node " + node.Key)
-	}
 }
 
 func getEnvForNode(node *etcd.Node) (string, error) {
@@ -464,13 +437,16 @@ func NewStatus(service *Service, node *etcd.Node) *Status {
 	return status
 }
 
-func (w *Watcher) LoadAllServices() (map[string]*ServiceCluster, error) {
-	result := make(map[string]*ServiceCluster)
+func (w *Watcher) LoadAllServices() (map[string]*Service, error) {
+	result := make(map[string]*Service)
 
 	response, err := w.kapi.Get(context.Background(), w.servicePrefix, &etcd.GetOptions{Recursive: true, Sort: true})
 	if err == nil {
 		for _, serviceNode := range response.Node.Nodes {
-			sc := getServiceClusterFromNode(serviceNode)
+			sc, err := getServiceFromNode(serviceNode)
+			if err != nil {
+				return nil, err
+			}
 			result[sc.Name] = sc
 		}
 	} else {
@@ -479,19 +455,19 @@ func (w *Watcher) LoadAllServices() (map[string]*ServiceCluster, error) {
 	return result, nil
 }
 
-func (w *Watcher) LoadService(serviceName string) (*ServiceCluster, error) {
+func (w *Watcher) LoadService(serviceName string) (*Service, error) {
 
-	response, err := w.kapi.Get(context.Background(), computeClusterKey(serviceName, w.servicePrefix), &etcd.GetOptions{Recursive: true, Sort: true})
+	response, err := w.kapi.Get(context.Background(), computeServiceKey(serviceName, w.servicePrefix), &etcd.GetOptions{Recursive: true, Sort: true})
 	if err != nil {
 		return nil, err
 	} else {
-		return getServiceClusterFromNode(response.Node), nil
+		return getServiceFromNode(response.Node)
 	}
 
 }
 
-func (w *Watcher) DestroyService(sc *ServiceCluster) error {
-	_, err := w.kapi.Delete(context.Background(), computeClusterKey(sc.Name, w.servicePrefix), &etcd.DeleteOptions{Recursive: true})
+func (w *Watcher) DestroyService(sc *Service) error {
+	_, err := w.kapi.Delete(context.Background(), computeServiceKey(sc.Name, w.servicePrefix), &etcd.DeleteOptions{Recursive: true})
 
 	return err
 }

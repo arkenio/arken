@@ -28,13 +28,11 @@ func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
 
 	statusFilter := r.URL.Query().Get("status")
 
-	services := make(map[string]*goarken.ServiceCluster)
+	services := make(map[string]*goarken.Service)
 
-	for _, cluster := range s.arkenModel.Services {
-		for _, service := range cluster.GetInstances() {
-			if statusFilter == "" || statusFilter == service.Status.Compute() {
-				services[service.Name] = cluster
-			}
+	for _, service := range s.arkenModel.Services {
+		if statusFilter == "" || statusFilter == service.Status.Compute() {
+			services[service.Name] = service
 		}
 	}
 
@@ -46,16 +44,12 @@ func (s *APIServer) ServiceIndex(w http.ResponseWriter, r *http.Request) {
 func (s *APIServer) ServiceShow(w http.ResponseWriter, r *http.Request) {
 	serviceId := mux.Vars(r)["serviceId"]
 
-	if service, ok := s.arkenModel.Services[serviceId]; ok {
+	if s, ok := s.arkenModel.Services[serviceId]; ok {
 		//create new instance to override the actions with a pretty format
-		ser := goarken.NewServiceCluster(service.Name)
 		w.Header().Add("Content-Type", "application/json")
-		for _, s := range service.GetInstances() {
-			ss := *s
-			ss.Actions = goarken.GetPrettyActions(&ss, r.URL)
-			ser.Add(&ss)
-		}
-		if err := json.NewEncoder(w).Encode(ser); err != nil {
+		ss := *s
+		ss.Actions = goarken.GetPrettyActions(&ss, r.URL)
+		if err := json.NewEncoder(w).Encode(ss); err != nil {
 			http.Error(w, err.Error(), 500)
 		}
 	} else {
@@ -70,13 +64,11 @@ func (s *APIServer) run(methodName string) func(w http.ResponseWriter, r *http.R
 
 		serviceId := mux.Vars(r)["serviceId"]
 
-		if serviceCluster, ok := s.arkenModel.Services[serviceId]; ok {
-			for _, service := range serviceCluster.GetInstances() {
-				value = reflect.ValueOf(s.arkenModel)
-				err := value.MethodByName(methodName).Call([]reflect.Value{reflect.ValueOf(service)})
-				if err != nil {
-					break
-				}
+		if service, ok := s.arkenModel.Services[serviceId]; ok {
+			value = reflect.ValueOf(s.arkenModel)
+			err := value.MethodByName(methodName).Call([]reflect.Value{reflect.ValueOf(service)})
+			if err != nil {
+				http.NotFound(w, r)
 			}
 			s.ServiceShow(w, r)
 		} else {
@@ -97,7 +89,7 @@ func (s *APIServer) ServiceCreate() func(w http.ResponseWriter, r *http.Request)
 		service.Status = goarken.NewInitialStatus(goarken.STOPPED_STATUS, service)
 		service.Actions = make([]string, 0)
 		service.Actions = goarken.InitActions(service)
-			
+
 		if service.Config.Passivation == nil {
 			service.Config.Passivation = goarken.DefaultPassivation()
 		}
@@ -129,9 +121,8 @@ func (s *APIServer) ServiceCreate() func(w http.ResponseWriter, r *http.Request)
 func (s *APIServer) ServiceDestroy() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		serviceId := mux.Vars(r)["serviceId"]
-		serviceCluster := s.arkenModel.Services[serviceId]
-
-		err := s.arkenModel.DestroyServiceCluster(serviceCluster)
+		service := s.arkenModel.Services[serviceId]
+		err := s.arkenModel.DestroyService(service)
 		if err == nil {
 			io.WriteString(w, "{\"serviceDestroyed\":\"ok\"}")
 		} else {
@@ -190,25 +181,23 @@ func (s *APIServer) ServiceUpdate() func(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (s *APIServer) runMethodFromAction(r *http.Request, actionName string, sc *goarken.ServiceCluster) error {
+func (s *APIServer) runMethodFromAction(r *http.Request, actionName string, service *goarken.Service) error {
 	var err error
-	for _, service := range sc.GetInstances() {
-		switch actionName {
-		case "start":
-			_, err = s.arkenModel.StartService(service)
-		case "stop":
-			_, err = s.arkenModel.StopService(service)
-		case "passivate":
-			s.arkenModel.PassivateService(service)
-		case "upgrade":
-			s.arkenModel.UpgradeService(service)
-		case "finishupgrade":
-			s.arkenModel.FinishUpgradeService(service)
-		case "rollback":
-			s.arkenModel.RollbackService(service)
-		default:
-			return errors.New("Method not available")
-		}
+	switch actionName {
+	case "start":
+		_, err = s.arkenModel.StartService(service)
+	case "stop":
+		_, err = s.arkenModel.StopService(service)
+	case "passivate":
+		s.arkenModel.PassivateService(service)
+	case "upgrade":
+		s.arkenModel.UpgradeService(service)
+	case "finishupgrade":
+		s.arkenModel.FinishUpgradeService(service)
+	case "rollback":
+		s.arkenModel.RollbackService(service)
+	default:
+		return errors.New("Method not available")
 	}
 	return err
 }
@@ -216,14 +205,12 @@ func (s *APIServer) runMethodFromAction(r *http.Request, actionName string, sc *
 func (s *APIServer) serviceNeedToBeUpgraded() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		serviceId := mux.Vars(r)["serviceId"]
-		if serviceCluster, ok := s.arkenModel.Services[serviceId]; !ok {
+		if service, ok := s.arkenModel.Services[serviceId]; !ok {
 			http.Error(w, "Service not found", http.StatusNotFound)
 		} else {
 			log.Infof("Check if service needs to be upgarded for the service %v", serviceId)
-			for _, service := range serviceCluster.GetInstances() {
-				if serviceId == service.Name {
-					s.arkenModel.NeedToBeUpgraded(service)
-				}
+			if serviceId == service.Name {
+				s.arkenModel.NeedToBeUpgraded(service)
 			}
 		}
 
