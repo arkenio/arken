@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 package cli
-
 import (
-	"errors"
-	"fmt"
-	"github.com/arkenio/arken/goarken/drivers"
+	"github.com/coreos/etcd/client"
 	"github.com/arkenio/arken/goarken/model"
 	"github.com/arkenio/arken/goarken/storage"
-	"github.com/coreos/etcd/client"
+	"github.com/arkenio/arken/goarken/drivers"
 	"github.com/spf13/viper"
+	"errors"
+	"fmt"
 	"time"
 )
+
+
 
 func CreateEtcdClient() client.KeysAPI {
 	etcdAdress := viper.GetString("etcdAddress")
@@ -40,41 +41,40 @@ func CreateEtcdClient() client.KeysAPI {
 
 }
 
+
 func CreateServiceDriver(etcdClient client.KeysAPI) (model.ServiceDriver, error) {
 
-	rancherHost := viper.GetString("CATTLE_URL")
-	if rancherHost == "" {
-		rancherHost = viper.GetString("rancher.host") //compat with old catalog def
-	}
 
-	accessKey := viper.GetString("CATTLE_ACCESS_KEY")
-	if accessKey == "" {
-		accessKey = viper.GetString("rancher.accessKey") //compat with old catalog def
-	}
+	rancherHost := viper.GetString("rancher.host")
+	accessKey := viper.GetString("rancher.accessKey")
+	secretKey := viper.GetString("rancher.secretKey")
 
-	secretKey := viper.GetString("CATTLE_SECRET_KEY")
-	if secretKey == "" {
-		secretKey = viper.GetString("rancher.secretKey") //compat with old catalog def
-	}
+
+
 
 	switch viper.GetString("driver") {
 	case "rancher":
-		log.Infof("Rancher host: %s", rancherHost)
+		log.Infof("Rancher host: %s",rancherHost)
 		log.Infof("Rancher Access key: %s", accessKey)
-		log.Infof("Rancher Secret key: ************************")
-		sd, err := drivers.NewRancherServiceDriver(rancherHost, accessKey, secretKey)
+		log.Infof("Rancher Secret key: ************************",)
+		sd, err := drivers.NewRancherServiceDriver(rancherHost,accessKey,secretKey)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Unable to connect to Rancher : %s", err.Error()))
 		}
 
-		return sd, nil
+
+
+		return sd, nil;
 
 	default:
-		return drivers.NewFleetServiceDriver(viper.GetString("etcdAddress")), nil
+		return drivers.NewFleetServiceDriver(viper.GetString("etcdAddress")),nil
 	}
 }
+
 
 func CreateWatcherFromCli(client client.KeysAPI) *storage.Watcher {
 	return storage.NewWatcher(client, viper.GetString("serviceDir"), viper.GetString("domainDir"))
 
 }
+
+

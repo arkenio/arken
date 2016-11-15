@@ -50,18 +50,26 @@ func (p *PassivationHandler) Start() {
 		case event := <-updateChannel:
 			// When a service changes, check if it has to be started
 
-			if sc, ok := event.Model.(*model.Service); ok {
-				service := p.arkenModel.Services[sc.Name]
+			if sc, ok := event.Model.(*model.ServiceCluster); ok {
+				cluster := p.arkenModel.Services[sc.Name]
 				//Cluster may be nil if event was a delete
-				if service != nil {
-					p.restartIfNeeded(service)
+				if cluster != nil {
+					for _, service := range p.arkenModel.Services[sc.Name].Instances {
+						p.restartIfNeeded(service)
+					}
 				}
 			}
 		}
 	}
 }
 
-func (p *PassivationHandler) passivateServiceIfNeeded(service *model.Service) {
+func (p *PassivationHandler) passivateServiceIfNeeded(serviceCluster *model.ServiceCluster) {
+
+	service, err := serviceCluster.Next()
+	if err != nil {
+		//No active instance, no need to passivate
+		return
+	}
 
 	// Checking if the service should be passivated or not
 	if p.hasToBePassivated(service) {

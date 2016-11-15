@@ -85,6 +85,7 @@ func (config *ServiceConfig) Equals(other *ServiceConfig) bool {
 
 // Holds information about a given service
 type Service struct {
+	Index      string         `json:"-"`
 	NodeKey    string         `json:"-"`
 	Location   *Location      `json:"location"`
 	Domain     string         `json:"domain"`
@@ -98,6 +99,8 @@ type Service struct {
 
 
 func (s *Service) Init() *Service {
+
+	s.Index = "1"
 
 	status := NewInitialStatus(STOPPED_STATUS, s)
 	s.Actions = InitActions(s)

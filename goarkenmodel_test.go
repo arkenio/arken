@@ -20,9 +20,9 @@ import (
 	"github.com/coreos/etcd/integration"
 	"github.com/coreos/etcd/pkg/testutil"
 	. "github.com/smartystreets/goconvey/convey"
-	"reflect"
 	"testing"
 	"time"
+	"reflect"
 )
 
 type MockServiceDriver struct {
@@ -66,6 +66,7 @@ func (sd *MockServiceDriver) Rollback(s *Service) (interface{}, error) {
 	return &RancherInfoType{EnvironmentId: "rancherId"}, nil
 }
 
+
 func (sd *MockServiceDriver) Stop(s *Service) (interface{}, error) {
 	sd.calls["stop"] = sd.calls["stop"] + 1
 	sd.events.Write(NewModelEvent("update", s))
@@ -90,9 +91,11 @@ func (w *MockServiceDriver) StopDriver() {
 
 }
 
-func (w *MockServiceDriver) NeedToBeUpgraded(s *Service) (bool, error) {
-	return false, nil
+
+func (w *MockServiceDriver) NeedToBeUpgraded(s *Service) (bool,error) {
+	return false,nil
 }
+
 
 func Test_EtcdWatcher(t *testing.T) {
 	//Wait for potential other etcd cluster to stop
@@ -125,7 +128,7 @@ func Test_EtcdWatcher(t *testing.T) {
 		model, _ = NewArkenModel(sd, pd)
 
 		for _, s := range model.Services {
-			model.DestroyService(s)
+			model.DestroyServiceCluster(s)
 		}
 
 		for _, d := range model.Domains {
@@ -150,15 +153,19 @@ func Test_EtcdWatcher(t *testing.T) {
 
 			Convey("Then its status should be stopped", func() {
 
-				service := model.Services["testService"]
-				st := StatusError{service.Status.Compute(), service.Status}
-				So(st.ComputedStatus, ShouldEqual, STOPPED_STATUS)
+				sc := model.Services["testService"]
+				_, status := sc.Next()
+				if st, ok := status.(StatusError); ok {
+					So(st.ComputedStatus, ShouldEqual, STOPPED_STATUS)
+				} else {
+					So(ok, ShouldBeTrue)
+				}
 			})
 
 			Convey("Then the service should be created in the backend", func() {
 				time.Sleep(time.Second)
 				So(sd.calls["create"], ShouldEqual, initialCreateCount+1)
-				instance := model.Services["testService"]
+				instance := model.Services["testService"].GetInstances()[0]
 
 				So(instance.Config, ShouldNotBeNil)
 				So(instance.Config.RancherInfo, ShouldNotBeNil)
@@ -182,7 +189,7 @@ func Test_EtcdWatcher(t *testing.T) {
 			Convey("When I start the service and the service is started", func() {
 				model.StartService(service)
 
-				service := model.Services[service.Name]
+				service := model.Services[service.Name].Instances[0]
 				service.Status.Current = STARTED_STATUS
 				service.Status.Alive = "1"
 
@@ -203,7 +210,7 @@ func Test_EtcdWatcher(t *testing.T) {
 			service.Domain = "test.domain.com"
 
 			model.CreateService(service, false)
-			Convey("Then a domain should be created", func() {
+				Convey("Then a domain should be created", func() {
 				time.Sleep(2 * time.Second)
 				So(len(model.Domains), ShouldEqual, 1)
 				So(model.Domains["test.domain.com"], ShouldNotBeNil)
@@ -215,12 +222,12 @@ func Test_EtcdWatcher(t *testing.T) {
 			service.Init()
 			service.Name = "testService"
 			model.CreateService(service, true)
-
-			Convey("The actions on the service should be stop, delete, update", func() {
-				actions := make([]string, 0)
-				actions = append(actions, START_ACTION, DELETE_ACTION, UPDATE_ACTION)
-				So(reflect.DeepEqual(service.Actions, actions), ShouldEqual, true)
-			})
+		
+		    Convey("The actions on the service should be stop, delete, update", func() {
+					actions := make([]string, 0)
+					actions = append(actions, START_ACTION, DELETE_ACTION, UPDATE_ACTION) 
+					So(reflect.DeepEqual(service.Actions, actions), ShouldEqual, true)
+				})
 
 			Convey("When i passivate the service", func() {
 				initial := sd.calls["stop"]
@@ -238,7 +245,11 @@ func Test_EtcdWatcher(t *testing.T) {
 }
 
 func getServiceStatus(model *Model, serviceName string) string {
-	service := model.Services[serviceName]
-	st := StatusError{service.Status.Compute(), service.Status}
-	return st.ComputedStatus
+	sc := model.Services[serviceName]
+	s, status := sc.Next()
+	if st, ok := status.(StatusError); ok {
+		return st.ComputedStatus
+	} else {
+		return s.Status.Current
+	}
 }

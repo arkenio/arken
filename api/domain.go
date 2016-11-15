@@ -24,14 +24,16 @@ func (s *APIServer) DomainIndex(w http.ResponseWriter, r *http.Request) {
 
 	statusFilter := r.URL.Query().Get("status")
 
-	domains := make(map[string]*model.Service)
+	domains := make(map[string]*model.ServiceCluster)
 
 	for domainName, domain := range s.arkenModel.Domains {
 		if domain.Typ == "service" {
-			service := s.arkenModel.Services[domain.Value]
-			if service != nil {
-				if statusFilter == "" || statusFilter == service.Status.Compute() {
-					domains[domainName] = service
+			cluster := s.arkenModel.Services[domain.Value]
+			if cluster != nil {
+				for _, service := range cluster.GetInstances() {
+					if statusFilter == "" || statusFilter == service.Status.Compute() {
+						domains[domainName] = cluster
+					}
 				}
 			}
 		}
@@ -50,10 +52,10 @@ func (s *APIServer) DomainShow(w http.ResponseWriter, r *http.Request) {
 	if domain != nil {
 
 		if domain.Typ == "service" {
-			service := s.arkenModel.Services[domain.Value]
-			if service != nil {
+			cluster := s.arkenModel.Services[domain.Value]
+			if cluster != nil {
 
-				if err := json.NewEncoder(w).Encode(service); err != nil {
+				if err := json.NewEncoder(w).Encode(cluster); err != nil {
 					panic(err)
 				}
 

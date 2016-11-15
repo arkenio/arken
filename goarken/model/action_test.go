@@ -84,8 +84,6 @@ func Test_actions(t *testing.T) {
 			service.Status.Expected = "started"
 			service.Status.Current = "started"
 			AddAction(service, STOP_ACTION) //as my service is started
-			AddAction(service, UPDATE_ACTION) //as my service is updated
-			AddAction(service, DELETE_ACTION) //as my service can be update
 
 			actions = make([]string, 0)
 			//simultate the update by adding the upgrade action

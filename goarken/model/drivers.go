@@ -49,10 +49,10 @@ type ServiceDriver interface {
 
 // This drivers allow to persist the model in a backend.
 type PersistenceDriver interface {
-	LoadAllServices() (map[string]*Service, error)
-	LoadService(serviceName string) (*Service, error)
+	LoadAllServices() (map[string]*ServiceCluster, error)
+	LoadService(serviceName string) (*ServiceCluster, error)
 	PersistService(*Service) (*Service, error)
-	DestroyService(*Service) error
+	DestroyService(*ServiceCluster) error
 
 	LoadAllDomains() (map[string]*Domain, error)
 	LoadDomain(serviceName string) (*Domain, error)

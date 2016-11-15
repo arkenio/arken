@@ -67,7 +67,7 @@ func (eb *eventBuffer) run(duration time.Duration) {
 // Return a unique key given a ModelEvent base on the type of the model,
 // the type of the event and the Model name.
 func (eb *eventBuffer) keyFromModelEvent(event *ModelEvent) string {
-	if sc, ok := event.Model.(*Service); ok {
+	if sc, ok := event.Model.(*ServiceCluster); ok {
 		return fmt.Sprintf("SC_%s_%s", event.EventType, sc.Name)
 	} else if domain, ok := event.Model.(*Domain); ok {
 		return fmt.Sprintf("D_%s_%s", event.EventType, domain.Name)

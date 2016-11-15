@@ -33,7 +33,9 @@ func NewModelEvent(eventType string, model interface{}) *ModelEvent {
 
 // Return the event ModelType
 func getModelType(model interface{}) string {
-	if _, ok := model.(*Domain); ok {
+	if _, ok := model.(*ServiceCluster); ok {
+		return "ServiceCluster"
+	} else if _, ok := model.(*Domain); ok {
 		return "Domain"
 	} else if _, ok := model.(*Service); ok {
 		return "Service"
