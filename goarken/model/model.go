@@ -138,6 +138,9 @@ func (m *Model) syncServiceByStatus(status []string) {
 
 // Synchronize ServiceDriver state with internal Arken state
 func (m *Model) SyncService(service *Service) {
+	if m.serviceDriver == nil {
+		return
+	}
 	info, err := m.serviceDriver.GetInfo(service)
 	if err != nil {
 		log.Warningf("Unable to get Status from service driver on %v", service.Name)
