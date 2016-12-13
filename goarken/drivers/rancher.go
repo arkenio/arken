@@ -23,7 +23,7 @@ import (
 	catalogclient "github.com/dmetzler/go-ranchercatalog/client"
 	"github.com/gorilla/websocket"
 	"github.com/mitchellh/mapstructure"
-	"github.com/rancher/go-rancher/client"
+	"github.com/rancher/go-rancher/v2"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -89,9 +89,9 @@ func getProjectIdFromRancherHost(host string) string {
 }
 
 func getRancherSocket(r *client.RancherClient) (*websocket.Conn, *http.Response, error) {
-	rancherUrl, _ := url.Parse(r.Opts.Url)
+	rancherUrl, _ := url.Parse(r.GetOpts().Url)
 
-	projectId := getProjectIdFromRancherHost(r.Opts.Url)
+	projectId := getProjectIdFromRancherHost(r.GetOpts().Url)
 	u := url.URL{
 		Scheme:   "ws",
 		Host:     rancherUrl.Host,
@@ -100,7 +100,7 @@ func getRancherSocket(r *client.RancherClient) (*websocket.Conn, *http.Response,
 	}
 
 	header := http.Header{
-		"Authorization": []string{"Basic " + basicAuth(r.Opts.AccessKey, r.Opts.SecretKey)},
+		"Authorization": []string{"Basic " + basicAuth(r.GetOpts().AccessKey, r.GetOpts().SecretKey)},
 	}
 
 	return r.Websocket(u.String(), header)
@@ -122,8 +122,9 @@ func (r *RancherServiceDriver) watch(c *websocket.Conn) {
 		if publish.Name == "resource.change" {
 
 			switch publish.ResourceType {
-			case "environment":
-				var result client.Environment
+			//should this be stack?
+			case "stack":
+				var result client.Stack
 				err := mapstructure.Decode(publish.Data["resource"], &result)
 				if err != nil {
 					log.Printf(err.Error())
@@ -139,7 +140,7 @@ func (r *RancherServiceDriver) watch(c *websocket.Conn) {
 
 }
 
-func rancherInfoTypeFromEnvironment(e *client.Environment) *RancherInfoType {
+func rancherInfoTypeFromEnvironment(e *client.Stack) *RancherInfoType {
 	return &RancherInfoType{
 		EnvironmentId:   e.Id,
 		EnvironmentName: e.Name,
@@ -162,7 +163,7 @@ func convertRancherHealthToStatus(health string) string {
 	return STOPPED_STATUS
 }
 
-func (r *RancherServiceDriver) computeEnvFromService(s *Service) (*client.Environment, error) {
+func (r *RancherServiceDriver) computeEnvFromService(s *Service) (*client.Stack, error) {
 	info := s.Config.RancherInfo
 
 	if info == nil || info.TemplateId == "" {
@@ -176,7 +177,7 @@ func (r *RancherServiceDriver) computeEnvFromService(s *Service) (*client.Enviro
 	}
 
 	//Start rancher environment
-	env := &client.Environment{}
+	env := &client.Stack{}
 	env.Name = s.Name
 	env.Environment = s.Config.Environment
 	env.DockerCompose = extractFileContent(template, "docker-compose.yml")
@@ -196,7 +197,7 @@ func (r *RancherServiceDriver) Create(s *Service, startOnCreate bool) (interface
 
 	env.StartOnCreate = startOnCreate
 
-	env, err = r.rancherClient.Environment.Create(env)
+	env, err = r.rancherClient.Stack.Create(env)
 
 	if err != nil {
 		log.Error("Error when creating service on Rancher side: " + err.Error())
@@ -217,7 +218,7 @@ func (r *RancherServiceDriver) NeedToBeUpgraded(s *Service) (bool, error) {
 	}
 
 	rancherId := s.Config.RancherInfo.EnvironmentId
-	actualEnv, err := r.rancherClient.Environment.ById(rancherId)
+	actualEnv, err := r.rancherClient.Stack.ById(rancherId)
 	if err != nil {
 		
 		log.Error("Error when fetching the environment %v", err)
@@ -235,7 +236,7 @@ func (r *RancherServiceDriver) Upgrade(s *Service) (interface{}, error) {
 	log.Infof("Upgrading environment %s", s.Name)
 
 	rancherId := s.Config.RancherInfo.EnvironmentId
-	env, err := r.rancherClient.Environment.ById(rancherId)
+	env, err := r.rancherClient.Stack.ById(rancherId)
 
 	if err != nil {
 		log.Errorf("Error when retrieving environment: %v", err)
@@ -257,14 +258,14 @@ func (r *RancherServiceDriver) Upgrade(s *Service) (interface{}, error) {
 		return nil, err
 	}
 
-	envUpgrade := &client.EnvironmentUpgrade{
+	envUpgrade := &client.StackUpgrade{
 		DockerCompose:  extractFileContent(template, "docker-compose.yml"),
 		RancherCompose: extractFileContent(template, "rancher-compose.yml"),
 		Environment:    s.Config.Environment,
 		ExternalId :    "catalog://" + info.TemplateId,
 	}
 
-	env, err = r.rancherClient.Environment.ActionUpgrade(env, envUpgrade)
+	env, err = r.rancherClient.Stack.ActionUpgrade(env, envUpgrade)
 
 	if err != nil {
 		log.Errorf("Environment upgrade failed in rancher : %v", err)
@@ -278,13 +279,13 @@ func (r *RancherServiceDriver) FinishUpgrade(s *Service) (interface{}, error) {
 	log.Infof("Finishing upgrading environment %s", s.Name)
 
 	rancherId := s.Config.RancherInfo.EnvironmentId
-	env, err := r.rancherClient.Environment.ById(rancherId)
+	env, err := r.rancherClient.Stack.ById(rancherId)
 
 	if err != nil {
 		log.Errorf("Error when retrieving environment: %v", err)
 	}
 
-	env, err = r.rancherClient.Environment.ActionFinishupgrade(env)
+	env, err = r.rancherClient.Stack.ActionFinishupgrade(env)
 
 	if err != nil {
 		log.Errorf("Finish upgrade environment failed in rancher : %v", err)
@@ -298,13 +299,13 @@ func (r *RancherServiceDriver) Rollback(s *Service) (interface{}, error) {
 	log.Infof("Rollbacking environment %s", s.Name)
 
 	rancherId := s.Config.RancherInfo.EnvironmentId
-	env, err := r.rancherClient.Environment.ById(rancherId)
+	env, err := r.rancherClient.Stack.ById(rancherId)
 
 	if err != nil {
 		log.Errorf("Error when retrieving environment: %v", err)
 	}
 
-	env, err = r.rancherClient.Environment.ActionRollback(env)
+	env, err = r.rancherClient.Stack.ActionRollback(env)
 
 	if err != nil {
 		log.Errorf("Rollbacking environment failed in rancher : %v", err)
@@ -322,31 +323,31 @@ func extractFileContent(template *catalogclient.Template, filename string) strin
 
 func (r *RancherServiceDriver) Start(s *Service) (interface{}, error) {
 	rancherId := s.Config.RancherInfo.EnvironmentId
-	env, err := r.rancherClient.Environment.ById(rancherId)
+	env, err := r.rancherClient.Stack.ById(rancherId)
 	if err != nil {
 		return nil, err
 	}
-	env, err = r.rancherClient.Environment.ActionActivateservices(env)
+	env, err = r.rancherClient.Stack.ActionActivateservices(env)
 	return s, err
 }
 
 func (r *RancherServiceDriver) Stop(s *Service) (interface{}, error) {
 	rancherId := s.Config.RancherInfo.EnvironmentId
-	env, err := r.rancherClient.Environment.ById(rancherId)
+	env, err := r.rancherClient.Stack.ById(rancherId)
 	if err != nil {
 		return nil, err
 	}
-	env, err = r.rancherClient.Environment.ActionDeactivateservices(env)
+	env, err = r.rancherClient.Stack.ActionDeactivateservices(env)
 	return s, err
 }
 
 func (r *RancherServiceDriver) Destroy(s *Service) error {
 	rancherId := s.Config.RancherInfo.EnvironmentId
-	env, err := r.rancherClient.Environment.ById(rancherId)
+	env, err := r.rancherClient.Stack.ById(rancherId)
 	if err != nil {
 		return err
 	}
-	return r.rancherClient.Environment.Delete(env)
+	return r.rancherClient.Stack.Delete(env)
 }
 
 func (r *RancherServiceDriver) Listen() chan *ModelEvent {
@@ -362,7 +363,7 @@ func basicAuth(username, password string) string {
 func (r *RancherServiceDriver) GetInfo(s *Service) (interface{}, error) {
 	rancherId := s.Config.RancherInfo.EnvironmentId
 
-	env, error := r.rancherClient.Environment.ById(rancherId)
+	env, error := r.rancherClient.Stack.ById(rancherId)
 	if error != nil {
 		return nil, error
 	} else {

@@ -122,9 +122,8 @@
 			"Rev": "89aa665301c31726ce9211688d0708ef6dcce5d3"
 		},
 		{
-			"ImportPath": "github.com/rancher/go-rancher/client",
-			"Comment": "v0.1.0-151-gc21ad77",
-			"Rev": "c21ad7797bc727e5fe65ae85d1be714845ce415c"
+			"ImportPath": "github.com/rancher/go-rancher/v2",
+			"Rev": "ae4bd7969def1a65def4cd8adf768f48a27debf2"
 		},
 		{
 			"ImportPath": "github.com/spf13/cast",
@@ -179,6 +178,10 @@
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
 			"Rev": "a83829b6f1293c91addabc89d0571c246397bbf4"
-		}
+		},
+		{
+            "ImportPath": "github.com/pkg/errors",
+            "Rev": "645ef00459ed84a119197bfb8d8205042c6df63d"
+        }
 	]
 }
