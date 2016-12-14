@@ -95,7 +95,7 @@ func getRancherSocket(r *client.RancherClient) (*websocket.Conn, *http.Response,
 	u := url.URL{
 		Scheme:   "ws",
 		Host:     rancherUrl.Host,
-		Path:     "/v1/subscribe",
+		Path:     "/v2-beta/subscribe",
 		RawQuery: fmt.Sprintf("eventNames=resource.change&include=hosts&include=instances&include=instance&include=instanceLinks&include=ipAddresses&projectId=%s", projectId),
 	}
 
@@ -119,10 +119,10 @@ func (r *RancherServiceDriver) watch(c *websocket.Conn) {
 
 		publish := &client.Publish{}
 		json.Unmarshal([]byte(message), publish)
+		
 		if publish.Name == "resource.change" {
 
 			switch publish.ResourceType {
-			//should this be stack?
 			case "stack":
 				var result client.Stack
 				err := mapstructure.Decode(publish.Data["resource"], &result)
