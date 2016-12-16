@@ -21,7 +21,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/Sirupsen/logrus"
-	"github.com/arkenio/arken/goarken/model"
 	"strings"
 )
 
@@ -35,7 +34,6 @@ type Config struct {
 
 
 var log = logrus.New()
-var arkenModel *model.Model
 
 var cfgFile string
 
@@ -81,34 +79,5 @@ func initConfig() {
 	viper.SetDefault("etcdAddress","http://127.0.0.1:4001")
 	viper.SetDefault("driver","fleet")
 
-
-	log.Info("Starting Arken...")
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		log.Infof("Using config file: %s", viper.ConfigFileUsed())
-
-	} else {
-		log.Errorf("Unable to read config file")
-	}
-
-
-	// Initialize GoArken model
-	etcdClient := CreateEtcdClient()
-
-	serviceDriver, err := CreateServiceDriver(etcdClient)
-	if(err != nil) {
-		log.Error("Unable to create Service Driver :")
-		log.Error(err.Error())
-		os.Exit(-1)
-	}
-
-	persistenceDriver := CreateWatcherFromCli(etcdClient)
-
-	arkenModel, err = model.NewArkenModel(serviceDriver, persistenceDriver )
-	if err != nil {
-		log.Error("Unable to initialize Arken model:")
-		log.Error(err.Error())
-		os.Exit(-1)
-	}
 
 }
